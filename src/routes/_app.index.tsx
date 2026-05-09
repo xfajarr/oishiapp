@@ -1,14 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  ArrowUpRight,
-  BadgeCheck,
-  Plus,
-  SlidersHorizontal,
-  Sparkles,
-  Wallet,
-  CircleCheck,
-  CircleX,
-} from "lucide-react";
+import { ArrowUpRight, BadgeCheck, LayoutGrid, Plus, Wallet, CircleCheck, CircleX } from "lucide-react";
 import { AppPage } from "@/components/app-page";
 
 export const Route = createFileRoute("/_app/")({
@@ -70,24 +61,28 @@ function HomePage() {
           <span className="text-sm font-medium truncate">Fund</span>
         </Link>
         <Link
-          to="/rules"
+          to="/profile"
           className="rounded-2xl bg-card p-3 flex flex-row items-center justify-center gap-2 border border-border min-w-0"
         >
           <span className="size-8 shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center ring-1 ring-primary/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
-            <SlidersHorizontal className="size-4" strokeWidth={2.25} />
-          </span>
-          <span className="text-sm font-medium truncate">Rules</span>
-        </Link>
-        <Link
-          to="/agent"
-          className="rounded-2xl bg-card p-3 flex flex-row items-center justify-center gap-2 border border-border min-w-0"
-        >
-          <span className="size-8 shrink-0 rounded-full bg-accent/35 text-accent-foreground flex items-center justify-center ring-1 ring-accent/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]">
             <BadgeCheck className="size-4" strokeWidth={2.35} />
           </span>
-          <span className="text-sm font-medium truncate">KYA</span>
+          <span className="text-sm font-medium truncate">Profile</span>
+        </Link>
+        <Link
+          to="/marketplace"
+          className="rounded-2xl bg-card p-3 flex flex-row items-center justify-center gap-2 border border-border min-w-0"
+        >
+          <span className="size-8 shrink-0 rounded-full bg-secondary text-foreground flex items-center justify-center">
+            <LayoutGrid className="size-4" strokeWidth={2.2} />
+          </span>
+          <span className="text-sm font-medium truncate">Strategies</span>
         </Link>
       </section>
+
+      <p className="mt-3 text-center text-xs text-muted-foreground">
+        Launch a new agent anytime from the center button in the bar below.
+      </p>
 
       {/* KYA reputation */}
       <section className="mt-5 rounded-3xl bg-card border border-border p-5">

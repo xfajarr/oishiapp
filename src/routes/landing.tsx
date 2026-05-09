@@ -9,14 +9,19 @@ import {
   Cpu,
   ExternalLink,
   Flame,
+  KeyRound,
+  Lock,
+  ScrollText,
   ShieldCheck,
+  Shield,
   Sparkles,
   Wallet,
   Zap,
   Route as RouteIcon,
 } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/landing")({
   head: () => ({
@@ -261,9 +266,6 @@ function LandingPage() {
           {/* OKX agent payments: x402, MPP, APP */}
           <FadeUp className="mt-14 sm:mt-16 lg:mt-24" delay={0.07}>
             <div className="rounded-3xl border border-border bg-gradient-to-br from-card via-card to-accent/5 p-6 sm:p-8 lg:p-10">
-              <p className="text-xs sm:text-sm uppercase tracking-[0.18em] text-muted-foreground">
-                OKX Onchain OS · agent-native commerce
-              </p>
               <h2 className="font-display text-2xl sm:text-3xl lg:text-4xl mt-3 sm:mt-4 max-w-3xl leading-tight text-balance">
                 Same vocabulary as the protocols teaching agents how to do business — not just fire
                 HTTP requests.
@@ -362,32 +364,99 @@ function LandingPage() {
             </ul>
           </section>
 
+          <section
+            id="security"
+            className="mt-14 sm:mt-16 lg:mt-24 scroll-mt-20 sm:scroll-mt-24"
+            aria-label="Security and trust"
+          >
+            <FadeUp>
+              <p className="text-xs sm:text-sm uppercase tracking-[0.18em] text-muted-foreground">
+                Security &amp; trust
+              </p>
+              <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl mt-3 sm:mt-4 max-w-3xl leading-tight text-balance">
+                Trust is the product. Autonomy is optional until you say so.
+              </h2>
+              <p className="text-muted-foreground text-base sm:text-lg mt-4 sm:mt-5 max-w-2xl leading-relaxed">
+                Oishi is built for teams who ship agents to production: keys stay in the user
+                wallet, policies are explicit, and every meaningful move leaves a trail you can
+                audit without trusting our servers.
+              </p>
+            </FadeUp>
+            <ul className="mt-8 sm:mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+              <TrustPoint
+                icon={<KeyRound className="size-5" strokeWidth={2.2} />}
+                title="Non-custodial keys"
+                body="Connect with Phantom or Solflare. Signing happens in the wallet you already use — we never receive or store private keys."
+                index={0}
+              />
+              <TrustPoint
+                icon={<Shield className="size-5" strokeWidth={2.2} />}
+                title="Policy, not vibes"
+                body="Spend caps, allowlists, and schedules are enforced as rules — readable constraints your team can review before an agent goes live."
+                index={1}
+              />
+              <TrustPoint
+                icon={<ScrollText className="size-5" strokeWidth={2.2} />}
+                title="On-chain receipts"
+                body="Activity maps to verifiable transfers and state. When something looks off, you follow the chain — not a black-box dashboard."
+                index={2}
+              />
+              <TrustPoint
+                icon={<Lock className="size-5" strokeWidth={2.2} />}
+                title="Least privilege by default"
+                body="Agents get bounded budgets and scoped permissions — not a blank cheque tied to your whole treasury."
+                index={3}
+              />
+            </ul>
+          </section>
+
           <section id="how" className="mt-14 sm:mt-16 lg:mt-24 scroll-mt-20 sm:scroll-mt-24">
             <FadeUp>
               <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl">How it works</h2>
             </FadeUp>
-            <ol className="mt-6 sm:mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
+            <div
+              role="list"
+              aria-label="How Oishi works"
+              className="mt-6 sm:mt-8 flex flex-col md:flex-row md:items-stretch md:gap-0 lg:gap-1"
+            >
               <Step
+                className="flex-1 min-w-0"
                 n={1}
                 title="Connect"
                 body="Phantom or Solflare. Keys never leave the wallet you trust."
                 delay={0}
               />
+              <div
+                className="flex shrink-0 items-center justify-center py-3 md:py-0 md:w-[4.5rem] lg:w-28 md:self-start md:pt-11"
+                aria-hidden="true"
+              >
+                <FlowConnectorVertical className="md:hidden" />
+                <FlowConnectorHorizontal className="hidden md:block w-full max-w-none" />
+              </div>
               <Step
+                className="flex-1 min-w-0"
                 n={2}
                 title="Fund & cap"
                 body="Bridge in with clear routes — then tighten the leash before the agent runs."
                 icon={<RouteIcon className="size-4" />}
                 delay={0.06}
               />
+              <div
+                className="flex shrink-0 items-center justify-center py-3 md:py-0 md:w-[4.5rem] lg:w-28 md:self-start md:pt-11"
+                aria-hidden="true"
+              >
+                <FlowConnectorVertical className="md:hidden" />
+                <FlowConnectorHorizontal className="hidden md:block w-full max-w-none" />
+              </div>
               <Step
+                className="flex-1 min-w-0"
                 n={3}
                 title="Let it spend"
                 body="Every payment checked against rules, logged on-chain, boringly predictable."
                 icon={<Bot className="size-4" />}
                 delay={0.12}
               />
-            </ol>
+            </div>
           </section>
 
           <FadeUp>
@@ -464,6 +533,120 @@ function OkxProtocolCard({
   );
 }
 
+/** Bezier geometry shared by stroke layers + SMIL motion (React Flow–style edge). */
+const FLOW_EDGE_H_D = "M 3 22 C 28 2, 100 2, 125 22";
+const FLOW_EDGE_V_D = "M 16 2 C 2 26, 30 68, 16 94";
+
+function FlowConnectorHorizontal({ className = "" }: { className?: string }) {
+  const reduceMotion = useReducedMotion();
+  const pathId = `how-flow-h-${useId().replace(/:/g, "")}`;
+
+  return (
+    <svg
+      viewBox="0 0 128 28"
+      fill="none"
+      aria-hidden
+      className={cn("h-[3.25rem] w-full text-foreground/25", className)}
+      preserveAspectRatio="none"
+    >
+      <path
+        d={FLOW_EDGE_H_D}
+        className="landing-flow-edge-base"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        vectorEffect="non-scaling-stroke"
+      />
+      <path
+        d={FLOW_EDGE_H_D}
+        strokeWidth="2.25"
+        strokeLinecap="round"
+        vectorEffect="non-scaling-stroke"
+        fill="none"
+        className="landing-flow-line-fg landing-flow-dash-animate"
+      />
+      <circle
+        cx="3"
+        cy="22"
+        r="3.5"
+        className="fill-card stroke-accent/50"
+        strokeWidth="1.5"
+        vectorEffect="non-scaling-stroke"
+      />
+      <circle
+        cx="125"
+        cy="22"
+        r="3.5"
+        className="fill-card stroke-accent/50"
+        strokeWidth="1.5"
+        vectorEffect="non-scaling-stroke"
+      />
+      <path id={pathId} d={FLOW_EDGE_H_D} fill="none" stroke="none" strokeWidth="0" />
+      {!reduceMotion ? (
+        <circle r="4" className="fill-accent landing-flow-pulse-glow" vectorEffect="non-scaling-stroke">
+          <animateMotion dur="2.35s" repeatCount="indefinite" rotate="auto" calcMode="linear">
+            <mpath href={`#${pathId}`} />
+          </animateMotion>
+        </circle>
+      ) : null}
+    </svg>
+  );
+}
+
+function FlowConnectorVertical({ className = "" }: { className?: string }) {
+  const reduceMotion = useReducedMotion();
+  const pathId = `how-flow-v-${useId().replace(/:/g, "")}`;
+
+  return (
+    <svg
+      viewBox="0 0 32 96"
+      fill="none"
+      aria-hidden
+      className={cn("h-24 w-10 text-foreground/25", className)}
+      preserveAspectRatio="xMidYMid meet"
+    >
+      <path
+        d={FLOW_EDGE_V_D}
+        className="landing-flow-edge-base"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        vectorEffect="non-scaling-stroke"
+      />
+      <path
+        d={FLOW_EDGE_V_D}
+        strokeWidth="2.25"
+        strokeLinecap="round"
+        vectorEffect="non-scaling-stroke"
+        fill="none"
+        className="landing-flow-line-fg landing-flow-dash-animate"
+      />
+      <circle
+        cx="16"
+        cy="2"
+        r="3.5"
+        className="fill-card stroke-accent/50"
+        strokeWidth="1.5"
+        vectorEffect="non-scaling-stroke"
+      />
+      <circle
+        cx="16"
+        cy="94"
+        r="3.5"
+        className="fill-card stroke-accent/50"
+        strokeWidth="1.5"
+        vectorEffect="non-scaling-stroke"
+      />
+      <path id={pathId} d={FLOW_EDGE_V_D} fill="none" stroke="none" strokeWidth="0" />
+      {!reduceMotion ? (
+        <circle r="4" className="fill-accent landing-flow-pulse-glow" vectorEffect="non-scaling-stroke">
+          <animateMotion dur="2.35s" repeatCount="indefinite" rotate="auto" calcMode="linear">
+            <mpath href={`#${pathId}`} />
+          </animateMotion>
+        </circle>
+      ) : null}
+    </svg>
+  );
+}
+
 function PartnerMarquee() {
   const reduceMotion = useReducedMotion();
   const chunk = (
@@ -491,12 +674,12 @@ function PartnerMarquee() {
 
   return (
     <div
-      className="relative overflow-hidden rounded-2xl bg-ink text-ink-foreground py-4 sm:py-5 border border-ink/20"
+      className="relative overflow-hidden rounded-2xl bg-card text-foreground py-4 sm:py-5 border border-border shadow-sm"
       role="region"
       aria-label="Technology partners"
     >
-      <div className="pointer-events-none absolute inset-y-0 left-0 w-16 sm:w-24 bg-gradient-to-r from-ink to-transparent z-10" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 w-16 sm:w-24 bg-gradient-to-l from-ink to-transparent z-10" />
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-16 sm:w-24 bg-gradient-to-r from-card to-transparent z-10" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-16 sm:w-24 bg-gradient-to-l from-card to-transparent z-10" />
       <div
         className={
           reduceMotion
@@ -531,10 +714,10 @@ function PartnerMarquee() {
 function MarqueeItem({ label, children }: { label: string; children: ReactNode }) {
   return (
     <span className="inline-flex items-center gap-3 shrink-0">
-      <span className="flex items-center justify-center size-10 sm:size-11 rounded-xl bg-ink-foreground/10">
+      <span className="flex items-center justify-center size-10 sm:size-11 rounded-xl bg-secondary border border-border/60">
         {children}
       </span>
-      <span className="text-sm font-medium tracking-tight text-ink-foreground/90">{label}</span>
+      <span className="text-sm font-medium tracking-tight text-foreground">{label}</span>
     </span>
   );
 }
@@ -559,6 +742,37 @@ function FadeUp({
     >
       {children}
     </motion.div>
+  );
+}
+
+function TrustPoint({
+  icon,
+  title,
+  body,
+  index,
+}: {
+  icon: ReactNode;
+  title: string;
+  body: string;
+  index: number;
+}) {
+  const reduceMotion = useReducedMotion();
+  return (
+    <motion.li
+      className="rounded-3xl bg-card border border-border p-5 sm:p-6 flex gap-4 h-full"
+      initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-48px" }}
+      transition={{ duration: 0.42, delay: index * 0.06, ease: easeOut }}
+    >
+      <span className="size-11 shrink-0 rounded-2xl bg-secondary flex items-center justify-center text-foreground">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <p className="font-medium text-foreground text-base">{title}</p>
+        <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">{body}</p>
+      </div>
+    </motion.li>
   );
 }
 
@@ -594,12 +808,14 @@ function Feature({
 }
 
 function Step({
+  className,
   n,
   title,
   body,
   icon,
   delay = 0,
 }: {
+  className?: string;
   n: number;
   title: string;
   body: string;
@@ -608,14 +824,24 @@ function Step({
 }) {
   const reduceMotion = useReducedMotion();
   return (
-    <motion.li
-      className="rounded-3xl bg-card border border-border p-5 sm:p-6 flex flex-row md:flex-col gap-4 h-full"
+    <motion.div
+      role="listitem"
+      className={cn(
+        "rounded-3xl bg-card border border-border p-5 sm:p-6 flex flex-row md:flex-col gap-4 h-full",
+        className,
+      )}
       initial={reduceMotion ? false : { opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.44, delay, ease: easeOut }}
     >
-      <span className="size-9 md:size-10 shrink-0 rounded-full bg-secondary text-foreground text-sm font-semibold flex items-center justify-center tabular md:mb-1">
+      <span
+        className={
+          "size-10 md:size-11 shrink-0 rounded-full bg-card text-foreground text-sm font-semibold " +
+          "flex items-center justify-center tabular md:mb-1 border-2 border-accent/35 " +
+          "shadow-sm ring-1 ring-border/70"
+        }
+      >
         {n}
       </span>
       <div className="min-w-0 flex-1">
@@ -625,6 +851,6 @@ function Step({
         </p>
         <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{body}</p>
       </div>
-    </motion.li>
+    </motion.div>
   );
 }

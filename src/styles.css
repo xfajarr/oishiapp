@@ -150,3 +150,38 @@
     animation: landing-marquee 36s linear infinite;
   }
 }
+
+@keyframes landing-flow-dash {
+  to {
+    stroke-dashoffset: -64;
+  }
+}
+
+.landing-flow-edge-base {
+  stroke: color-mix(in oklch, var(--muted-foreground) 55%, var(--border));
+  opacity: 0.55;
+  fill: none;
+}
+
+.landing-flow-line-bg {
+  stroke: color-mix(in oklch, var(--border) 90%, var(--foreground));
+  opacity: 0.45;
+}
+
+.landing-flow-line-fg {
+  stroke: color-mix(in oklch, var(--accent) 78%, var(--foreground));
+  stroke-linecap: round;
+}
+
+.landing-flow-pulse-glow {
+  filter: drop-shadow(0 0 5px color-mix(in oklch, var(--accent) 55%, transparent))
+    drop-shadow(0 0 12px color-mix(in oklch, var(--accent) 35%, transparent));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .landing-flow-dash-animate {
+    stroke-dasharray: 4 11;
+    stroke-dashoffset: 0;
+    animation: landing-flow-dash 1.65s linear infinite;
+  }
+}

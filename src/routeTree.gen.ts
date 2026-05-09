@@ -14,6 +14,9 @@ import { Route as LandingRouteImport } from './routes/landing'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppRulesRouteImport } from './routes/_app.rules'
+import { Route as AppProfileRouteImport } from './routes/_app.profile'
+import { Route as AppMarketplaceRouteImport } from './routes/_app.marketplace'
+import { Route as AppLaunchRouteImport } from './routes/_app.launch'
 import { Route as AppFundRouteImport } from './routes/_app.fund'
 import { Route as AppAgentRouteImport } from './routes/_app.agent'
 import { Route as AppActivityRouteImport } from './routes/_app.activity'
@@ -42,6 +45,21 @@ const AppRulesRoute = AppRulesRouteImport.update({
   path: '/rules',
   getParentRoute: () => AppRoute,
 } as any)
+const AppProfileRoute = AppProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMarketplaceRoute = AppMarketplaceRouteImport.update({
+  id: '/marketplace',
+  path: '/marketplace',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLaunchRoute = AppLaunchRouteImport.update({
+  id: '/launch',
+  path: '/launch',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppFundRoute = AppFundRouteImport.update({
   id: '/fund',
   path: '/fund',
@@ -65,6 +83,9 @@ export interface FileRoutesByFullPath {
   '/activity': typeof AppActivityRoute
   '/agent': typeof AppAgentRoute
   '/fund': typeof AppFundRoute
+  '/launch': typeof AppLaunchRoute
+  '/marketplace': typeof AppMarketplaceRoute
+  '/profile': typeof AppProfileRoute
   '/rules': typeof AppRulesRoute
 }
 export interface FileRoutesByTo {
@@ -73,6 +94,9 @@ export interface FileRoutesByTo {
   '/activity': typeof AppActivityRoute
   '/agent': typeof AppAgentRoute
   '/fund': typeof AppFundRoute
+  '/launch': typeof AppLaunchRoute
+  '/marketplace': typeof AppMarketplaceRoute
+  '/profile': typeof AppProfileRoute
   '/rules': typeof AppRulesRoute
   '/': typeof AppIndexRoute
 }
@@ -84,6 +108,9 @@ export interface FileRoutesById {
   '/_app/activity': typeof AppActivityRoute
   '/_app/agent': typeof AppAgentRoute
   '/_app/fund': typeof AppFundRoute
+  '/_app/launch': typeof AppLaunchRoute
+  '/_app/marketplace': typeof AppMarketplaceRoute
+  '/_app/profile': typeof AppProfileRoute
   '/_app/rules': typeof AppRulesRoute
   '/_app/': typeof AppIndexRoute
 }
@@ -96,6 +123,9 @@ export interface FileRouteTypes {
     | '/activity'
     | '/agent'
     | '/fund'
+    | '/launch'
+    | '/marketplace'
+    | '/profile'
     | '/rules'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -104,6 +134,9 @@ export interface FileRouteTypes {
     | '/activity'
     | '/agent'
     | '/fund'
+    | '/launch'
+    | '/marketplace'
+    | '/profile'
     | '/rules'
     | '/'
   id:
@@ -114,6 +147,9 @@ export interface FileRouteTypes {
     | '/_app/activity'
     | '/_app/agent'
     | '/_app/fund'
+    | '/_app/launch'
+    | '/_app/marketplace'
+    | '/_app/profile'
     | '/_app/rules'
     | '/_app/'
   fileRoutesById: FileRoutesById
@@ -161,6 +197,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRulesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/profile': {
+      id: '/_app/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AppProfileRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/marketplace': {
+      id: '/_app/marketplace'
+      path: '/marketplace'
+      fullPath: '/marketplace'
+      preLoaderRoute: typeof AppMarketplaceRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/launch': {
+      id: '/_app/launch'
+      path: '/launch'
+      fullPath: '/launch'
+      preLoaderRoute: typeof AppLaunchRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/fund': {
       id: '/_app/fund'
       path: '/fund'
@@ -189,6 +246,9 @@ interface AppRouteChildren {
   AppActivityRoute: typeof AppActivityRoute
   AppAgentRoute: typeof AppAgentRoute
   AppFundRoute: typeof AppFundRoute
+  AppLaunchRoute: typeof AppLaunchRoute
+  AppMarketplaceRoute: typeof AppMarketplaceRoute
+  AppProfileRoute: typeof AppProfileRoute
   AppRulesRoute: typeof AppRulesRoute
   AppIndexRoute: typeof AppIndexRoute
 }
@@ -197,6 +257,9 @@ const AppRouteChildren: AppRouteChildren = {
   AppActivityRoute: AppActivityRoute,
   AppAgentRoute: AppAgentRoute,
   AppFundRoute: AppFundRoute,
+  AppLaunchRoute: AppLaunchRoute,
+  AppMarketplaceRoute: AppMarketplaceRoute,
+  AppProfileRoute: AppProfileRoute,
   AppRulesRoute: AppRulesRoute,
   AppIndexRoute: AppIndexRoute,
 }

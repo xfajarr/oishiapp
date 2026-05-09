@@ -1,13 +1,18 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { motion, useReducedMotion } from "framer-motion";
-import { Home, Shield, Activity, Bot } from "lucide-react";
+import { Activity, Home, LayoutGrid, Rocket, UserCircle } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
-const tabs = [
+const leftTabs = [
   { to: "/", label: "Home", icon: Home },
-  { to: "/rules", label: "Rules", icon: Shield },
+  { to: "/marketplace", label: "Market", icon: LayoutGrid },
+] as const;
+
+const rightTabs = [
   { to: "/activity", label: "Activity", icon: Activity },
-  { to: "/agent", label: "Agent", icon: Bot },
+  { to: "/profile", label: "Profile", icon: UserCircle },
 ] as const;
 
 export function ShellChrome({ children }: { children: ReactNode }) {
@@ -36,7 +41,7 @@ export function ShellChrome({ children }: { children: ReactNode }) {
         descendants anchor to the (possibly very tall) column instead of the viewport.
       */}
       <nav
-        className="fixed z-50 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[408px] pointer-events-none bottom-[max(1rem,env(safe-area-inset-bottom,0px))]"
+        className="fixed z-50 left-1/2 -translate-x-1/2 w-[calc(100%-1rem)] max-w-[420px] pointer-events-none bottom-[max(1rem,env(safe-area-inset-bottom,0px))]"
         aria-label="App navigation"
       >
         <div className="pointer-events-auto">
@@ -49,53 +54,84 @@ export function ShellChrome({ children }: { children: ReactNode }) {
 
 function BottomNav({ pathname }: { pathname: string }) {
   const reduceMotion = useReducedMotion();
+  const launchActive = pathname === "/launch";
+
+  const renderTab = (item: { to: string; label: string; icon: LucideIcon }) => {
+    const active = pathname === item.to;
+    const Icon = item.icon;
+    return (
+      <Link
+        key={item.to}
+        to={item.to}
+        className={cn(
+          "relative shrink-0 flex items-center justify-center gap-1.5 py-2.5 px-2 sm:px-2.5 rounded-full min-w-0 flex-1 max-w-[5.5rem]",
+          active ? "text-accent-foreground" : "text-ink-foreground/70 hover:text-ink-foreground",
+        )}
+      >
+        {active ? (
+          <motion.div
+            layoutId="shell-nav-pill"
+            className="absolute inset-0 rounded-full bg-accent shadow-none"
+            transition={
+              reduceMotion
+                ? { duration: 0.2 }
+                : { type: "spring", stiffness: 420, damping: 34, mass: 0.7 }
+            }
+          />
+        ) : null}
+        <span className="relative z-10 flex items-center justify-center gap-2 px-0.5">
+          <Icon className="size-[15px] sm:size-4 shrink-0" strokeWidth={2.2} />
+          {active ? (
+            <motion.span
+              initial={reduceMotion ? false : { opacity: 0, x: -4 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{
+                duration: reduceMotion ? 0.1 : 0.22,
+                delay: reduceMotion ? 0 : 0.05,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+              className="text-xs font-medium truncate hidden sm:inline"
+            >
+              {item.label}
+            </motion.span>
+          ) : null}
+        </span>
+      </Link>
+    );
+  };
 
   return (
-    <div className="bg-ink/95 text-ink-foreground backdrop-blur-md rounded-full px-2 py-2 flex items-center justify-between shadow-[0_12px_40px_-12px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.06)_inset]">
-      {tabs.map(({ to, label, icon: Icon }) => {
-        const active = pathname === to;
-        return (
-          <Link
-            key={to}
-            to={to}
-            className={[
-              "relative flex flex-1 items-center justify-center gap-2 py-2.5 rounded-full min-w-0",
-              active
-                ? "text-accent-foreground"
-                : "text-ink-foreground/70 hover:text-ink-foreground",
-            ].join(" ")}
-          >
-            {active ? (
-              <motion.div
-                layoutId="shell-nav-pill"
-                className="absolute inset-0 rounded-full bg-accent shadow-[0_1px_0_rgba(255,255,255,0.2)_inset]"
-                transition={
-                  reduceMotion
-                    ? { duration: 0.2 }
-                    : { type: "spring", stiffness: 420, damping: 34, mass: 0.7 }
-                }
-              />
-            ) : null}
-            <span className="relative z-10 flex items-center gap-2 px-1">
-              <Icon className="size-4 shrink-0" strokeWidth={2.2} />
-              {active ? (
-                <motion.span
-                  initial={reduceMotion ? false : { opacity: 0, x: -4 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{
-                    duration: reduceMotion ? 0.1 : 0.22,
-                    delay: reduceMotion ? 0 : 0.05,
-                    ease: [0.22, 1, 0.36, 1],
-                  }}
-                  className="text-xs font-medium truncate"
-                >
-                  {label}
-                </motion.span>
-              ) : null}
-            </span>
-          </Link>
-        );
-      })}
+    <div className="relative pt-1.5">
+      <div className="relative rounded-full bg-ink/95 text-ink-foreground backdrop-blur-md px-1 py-1 flex items-stretch gap-0 min-h-[52px] shadow-[0_12px_40px_-12px_rgba(0,0,0,0.45)]">
+        <div className="flex flex-1 min-w-0 items-center justify-stretch gap-0">
+          {leftTabs.map(renderTab)}
+        </div>
+
+        <div
+          className="w-[3.25rem] sm:w-14 shrink-0 flex items-center justify-center"
+          aria-hidden="true"
+        />
+
+        <div className="flex flex-1 min-w-0 items-center justify-stretch gap-0">
+          {rightTabs.map(renderTab)}
+        </div>
+      </div>
+
+      <div className="pointer-events-auto absolute left-1/2 top-2 -translate-x-1/2 -translate-y-[18%]">
+        <Link
+          to="/launch"
+          aria-label="Launch agent"
+          aria-current={launchActive ? "page" : undefined}
+          className={cn(
+            "flex size-[3.25rem] sm:size-14 items-center justify-center rounded-full bg-accent text-accent-foreground",
+            "shadow-[0_10px_28px_-10px_color-mix(in_oklch,var(--accent)_55%,transparent)]",
+            "hover:bg-accent/90 active:scale-[0.96] transition-[transform,background-color]",
+            launchActive && "ring-[3px] ring-ink/35 scale-[1.03]",
+          )}
+        >
+          <Rocket className="size-[1.15rem] sm:size-5" strokeWidth={2.25} />
+        </Link>
+      </div>
     </div>
   );
 }
