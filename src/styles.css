@@ -131,3 +131,22 @@
 
   .tabular { font-variant-numeric: tabular-nums; }
 }
+
+@keyframes landing-marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.landing-marquee-track {
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .landing-marquee-track {
+    animation: landing-marquee 36s linear infinite;
+  }
+}

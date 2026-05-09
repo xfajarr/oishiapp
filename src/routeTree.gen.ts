@@ -9,123 +9,215 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as RulesRouteImport } from './routes/rules'
-import { Route as FundRouteImport } from './routes/fund'
-import { Route as AgentRouteImport } from './routes/agent'
-import { Route as ActivityRouteImport } from './routes/activity'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as LandingRouteImport } from './routes/landing'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as AppRulesRouteImport } from './routes/_app.rules'
+import { Route as AppFundRouteImport } from './routes/_app.fund'
+import { Route as AppAgentRouteImport } from './routes/_app.agent'
+import { Route as AppActivityRouteImport } from './routes/_app.activity'
 
-const RulesRoute = RulesRouteImport.update({
-  id: '/rules',
-  path: '/rules',
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
-const FundRoute = FundRouteImport.update({
-  id: '/fund',
-  path: '/fund',
+const LandingRoute = LandingRouteImport.update({
+  id: '/landing',
+  path: '/landing',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AgentRoute = AgentRouteImport.update({
-  id: '/agent',
-  path: '/agent',
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ActivityRoute = ActivityRouteImport.update({
-  id: '/activity',
-  path: '/activity',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IndexRoute = IndexRouteImport.update({
+const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRulesRoute = AppRulesRouteImport.update({
+  id: '/rules',
+  path: '/rules',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppFundRoute = AppFundRouteImport.update({
+  id: '/fund',
+  path: '/fund',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAgentRoute = AppAgentRouteImport.update({
+  id: '/agent',
+  path: '/agent',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppActivityRoute = AppActivityRouteImport.update({
+  id: '/activity',
+  path: '/activity',
+  getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/activity': typeof ActivityRoute
-  '/agent': typeof AgentRoute
-  '/fund': typeof FundRoute
-  '/rules': typeof RulesRoute
+  '/': typeof AppIndexRoute
+  '/landing': typeof LandingRoute
+  '/onboarding': typeof OnboardingRoute
+  '/activity': typeof AppActivityRoute
+  '/agent': typeof AppAgentRoute
+  '/fund': typeof AppFundRoute
+  '/rules': typeof AppRulesRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/activity': typeof ActivityRoute
-  '/agent': typeof AgentRoute
-  '/fund': typeof FundRoute
-  '/rules': typeof RulesRoute
+  '/landing': typeof LandingRoute
+  '/onboarding': typeof OnboardingRoute
+  '/activity': typeof AppActivityRoute
+  '/agent': typeof AppAgentRoute
+  '/fund': typeof AppFundRoute
+  '/rules': typeof AppRulesRoute
+  '/': typeof AppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/activity': typeof ActivityRoute
-  '/agent': typeof AgentRoute
-  '/fund': typeof FundRoute
-  '/rules': typeof RulesRoute
+  '/_app': typeof AppRouteWithChildren
+  '/landing': typeof LandingRoute
+  '/onboarding': typeof OnboardingRoute
+  '/_app/activity': typeof AppActivityRoute
+  '/_app/agent': typeof AppAgentRoute
+  '/_app/fund': typeof AppFundRoute
+  '/_app/rules': typeof AppRulesRoute
+  '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/activity' | '/agent' | '/fund' | '/rules'
+  fullPaths:
+    | '/'
+    | '/landing'
+    | '/onboarding'
+    | '/activity'
+    | '/agent'
+    | '/fund'
+    | '/rules'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/activity' | '/agent' | '/fund' | '/rules'
-  id: '__root__' | '/' | '/activity' | '/agent' | '/fund' | '/rules'
+  to:
+    | '/landing'
+    | '/onboarding'
+    | '/activity'
+    | '/agent'
+    | '/fund'
+    | '/rules'
+    | '/'
+  id:
+    | '__root__'
+    | '/_app'
+    | '/landing'
+    | '/onboarding'
+    | '/_app/activity'
+    | '/_app/agent'
+    | '/_app/fund'
+    | '/_app/rules'
+    | '/_app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  ActivityRoute: typeof ActivityRoute
-  AgentRoute: typeof AgentRoute
-  FundRoute: typeof FundRoute
-  RulesRoute: typeof RulesRoute
+  AppRoute: typeof AppRouteWithChildren
+  LandingRoute: typeof LandingRoute
+  OnboardingRoute: typeof OnboardingRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/rules': {
-      id: '/rules'
-      path: '/rules'
-      fullPath: '/rules'
-      preLoaderRoute: typeof RulesRouteImport
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/fund': {
-      id: '/fund'
-      path: '/fund'
-      fullPath: '/fund'
-      preLoaderRoute: typeof FundRouteImport
+    '/landing': {
+      id: '/landing'
+      path: '/landing'
+      fullPath: '/landing'
+      preLoaderRoute: typeof LandingRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/agent': {
-      id: '/agent'
-      path: '/agent'
-      fullPath: '/agent'
-      preLoaderRoute: typeof AgentRouteImport
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/activity': {
-      id: '/activity'
-      path: '/activity'
-      fullPath: '/activity'
-      preLoaderRoute: typeof ActivityRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
+    '/_app/': {
+      id: '/_app/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/rules': {
+      id: '/_app/rules'
+      path: '/rules'
+      fullPath: '/rules'
+      preLoaderRoute: typeof AppRulesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/fund': {
+      id: '/_app/fund'
+      path: '/fund'
+      fullPath: '/fund'
+      preLoaderRoute: typeof AppFundRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/agent': {
+      id: '/_app/agent'
+      path: '/agent'
+      fullPath: '/agent'
+      preLoaderRoute: typeof AppAgentRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/activity': {
+      id: '/_app/activity'
+      path: '/activity'
+      fullPath: '/activity'
+      preLoaderRoute: typeof AppActivityRouteImport
+      parentRoute: typeof AppRoute
     }
   }
 }
 
+interface AppRouteChildren {
+  AppActivityRoute: typeof AppActivityRoute
+  AppAgentRoute: typeof AppAgentRoute
+  AppFundRoute: typeof AppFundRoute
+  AppRulesRoute: typeof AppRulesRoute
+  AppIndexRoute: typeof AppIndexRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppActivityRoute: AppActivityRoute,
+  AppAgentRoute: AppAgentRoute,
+  AppFundRoute: AppFundRoute,
+  AppRulesRoute: AppRulesRoute,
+  AppIndexRoute: AppIndexRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  ActivityRoute: ActivityRoute,
-  AgentRoute: AgentRoute,
-  FundRoute: FundRoute,
-  RulesRoute: RulesRoute,
+  AppRoute: AppRouteWithChildren,
+  LandingRoute: LandingRoute,
+  OnboardingRoute: OnboardingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

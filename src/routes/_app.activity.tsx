@@ -1,12 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AppShell } from "@/components/app-shell";
+import { AppPage } from "@/components/app-page";
 import { CircleCheck, CircleX, Wallet, ArrowDownLeft, ArrowUpRight, Sparkles } from "lucide-react";
 
-export const Route = createFileRoute("/activity")({
+export const Route = createFileRoute("/_app/activity")({
   head: () => ({
     meta: [
       { title: "Activity — Hoshi" },
-      { name: "description", content: "Transparent, on-chain log of every action your agent takes." },
+      {
+        name: "description",
+        content: "Transparent, on-chain log of every action your agent takes.",
+      },
     ],
   }),
   component: ActivityPage,
@@ -74,7 +77,6 @@ const items: Item[] = [
   },
 ];
 
-export default ActivityPage;
 function ActivityPage() {
   const groups = items.reduce<Record<string, Item[]>>((acc, it) => {
     (acc[it.group] ??= []).push(it);
@@ -82,7 +84,7 @@ function ActivityPage() {
   }, {});
 
   return (
-    <AppShell subtitle="on-chain" title="Activity">
+    <AppPage subtitle="on-chain" title="Activity">
       <p className="text-sm text-muted-foreground mt-1 mb-5">
         Every move your agent makes — visible, signed, reversible.
       </p>
@@ -99,7 +101,7 @@ function ActivityPage() {
           </ul>
         </div>
       ))}
-    </AppShell>
+    </AppPage>
   );
 }
 
@@ -108,10 +110,10 @@ function Row({ item }: { item: Item }) {
     item.status === "approved"
       ? { bg: "bg-success", fg: "text-success-foreground", Icon: CircleCheck }
       : item.status === "blocked"
-      ? { bg: "bg-destructive", fg: "text-destructive-foreground", Icon: CircleX }
-      : item.status === "funded"
-      ? { bg: "bg-accent", fg: "text-accent-foreground", Icon: ArrowDownLeft }
-      : { bg: "bg-secondary", fg: "text-foreground", Icon: Sparkles };
+        ? { bg: "bg-destructive", fg: "text-destructive-foreground", Icon: CircleX }
+        : item.status === "funded"
+          ? { bg: "bg-accent", fg: "text-accent-foreground", Icon: ArrowDownLeft }
+          : { bg: "bg-secondary", fg: "text-foreground", Icon: Sparkles };
 
   const Icon = tone.Icon;
   const negative = item.amount?.startsWith("-");
@@ -119,7 +121,9 @@ function Row({ item }: { item: Item }) {
   return (
     <li className="rounded-2xl bg-card border border-border p-4">
       <div className="flex items-center gap-3">
-        <span className={`size-10 rounded-full flex items-center justify-center ${tone.bg} ${tone.fg}`}>
+        <span
+          className={`size-10 rounded-full flex items-center justify-center ${tone.bg} ${tone.fg}`}
+        >
           <Icon className="size-5" strokeWidth={2.2} />
         </span>
         <div className="flex-1 min-w-0">
@@ -128,7 +132,9 @@ function Row({ item }: { item: Item }) {
         </div>
         {item.amount && (
           <div className="text-right">
-            <p className={`text-sm font-medium tabular ${negative ? "text-foreground" : "text-success"}`}>
+            <p
+              className={`text-sm font-medium tabular ${negative ? "text-foreground" : "text-success"}`}
+            >
               {item.amount}
             </p>
             <p className="text-xs text-muted-foreground">{item.time}</p>

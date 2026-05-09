@@ -1,12 +1,24 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowUpRight, Plus, ShieldCheck, Sparkles, Wallet, Zap, CircleCheck, CircleX } from "lucide-react";
-import { AppShell } from "@/components/app-shell";
+import {
+  ArrowUpRight,
+  BadgeCheck,
+  Plus,
+  SlidersHorizontal,
+  Sparkles,
+  Wallet,
+  CircleCheck,
+  CircleX,
+} from "lucide-react";
+import { AppPage } from "@/components/app-page";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_app/")({
   head: () => ({
     meta: [
       { title: "Hoshi — Your agent's wallet" },
-      { name: "description", content: "Programmable allowances and on-chain reputation for AI agents on Solana." },
+      {
+        name: "description",
+        content: "Programmable allowances and on-chain reputation for AI agents on Solana.",
+      },
     ],
   }),
   component: HomePage,
@@ -14,22 +26,14 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   return (
-    <AppShell
-      subtitle="hoshi · @alice"
-      title="Good evening, Alice"
-      right={
-        <button className="size-11 rounded-full bg-secondary text-foreground flex items-center justify-center">
-          <Sparkles className="size-5" strokeWidth={2.2} />
-        </button>
-      }
-    >
+    <AppPage title="Good evening, Alice">
       {/* Agent balance card */}
       <section className="mt-2 rounded-3xl bg-ink text-ink-foreground p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="size-2 rounded-full bg-accent" />
             <span className="text-xs uppercase tracking-[0.18em] text-ink-foreground/60">
-              Agent wallet · Solana
+              Agent wallet
             </span>
           </div>
           <span className="text-xs font-mono text-ink-foreground/60">@alice.hoshi</span>
@@ -39,7 +43,7 @@ function HomePage() {
           <p className="font-display text-6xl tabular leading-none">
             $1,284<span className="text-ink-foreground/40">.20</span>
           </p>
-          <p className="mt-2 text-sm text-ink-foreground/60">USDC available · daily cap $50</p>
+          <p className="mt-2 text-sm text-ink-foreground/60">daily cap $50</p>
         </div>
 
         {/* Daily cap progress */}
@@ -56,23 +60,32 @@ function HomePage() {
 
       {/* Quick actions */}
       <section className="mt-5 grid grid-cols-3 gap-3">
-        <Link to="/fund" className="rounded-2xl bg-card p-4 flex flex-col gap-3 border border-border">
-          <span className="size-9 rounded-full bg-accent text-accent-foreground flex items-center justify-center">
-            <Plus className="size-5" strokeWidth={2.4} />
+        <Link
+          to="/fund"
+          className="rounded-2xl bg-card p-3 flex flex-row items-center justify-center gap-2 border border-border min-w-0"
+        >
+          <span className="size-8 shrink-0 rounded-full bg-accent text-accent-foreground flex items-center justify-center">
+            <Plus className="size-4" strokeWidth={2.4} />
           </span>
-          <span className="text-sm font-medium">Fund</span>
+          <span className="text-sm font-medium truncate">Fund</span>
         </Link>
-        <Link to="/rules" className="rounded-2xl bg-card p-4 flex flex-col gap-3 border border-border">
-          <span className="size-9 rounded-full bg-secondary text-foreground flex items-center justify-center">
-            <ShieldCheck className="size-5" strokeWidth={2.2} />
+        <Link
+          to="/rules"
+          className="rounded-2xl bg-card p-3 flex flex-row items-center justify-center gap-2 border border-border min-w-0"
+        >
+          <span className="size-8 shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center ring-1 ring-primary/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
+            <SlidersHorizontal className="size-4" strokeWidth={2.25} />
           </span>
-          <span className="text-sm font-medium">Rules</span>
+          <span className="text-sm font-medium truncate">Rules</span>
         </Link>
-        <Link to="/agent" className="rounded-2xl bg-card p-4 flex flex-col gap-3 border border-border">
-          <span className="size-9 rounded-full bg-secondary text-foreground flex items-center justify-center">
-            <Zap className="size-5" strokeWidth={2.2} />
+        <Link
+          to="/agent"
+          className="rounded-2xl bg-card p-3 flex flex-row items-center justify-center gap-2 border border-border min-w-0"
+        >
+          <span className="size-8 shrink-0 rounded-full bg-accent/35 text-accent-foreground flex items-center justify-center ring-1 ring-accent/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]">
+            <BadgeCheck className="size-4" strokeWidth={2.35} />
           </span>
-          <span className="text-sm font-medium">KYA</span>
+          <span className="text-sm font-medium truncate">KYA</span>
         </Link>
       </section>
 
@@ -80,7 +93,9 @@ function HomePage() {
       <section className="mt-5 rounded-3xl bg-card border border-border p-5">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">KYA reputation</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              KYA reputation
+            </p>
             <p className="font-display text-3xl mt-1">A · 824</p>
           </div>
           <div className="text-right">
@@ -106,7 +121,10 @@ function HomePage() {
       <section className="mt-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-medium text-foreground">Recent activity</h2>
-          <Link to="/activity" className="text-xs text-muted-foreground inline-flex items-center gap-1">
+          <Link
+            to="/activity"
+            className="text-xs text-muted-foreground inline-flex items-center gap-1"
+          >
             See all <ArrowUpRight className="size-3" />
           </Link>
         </div>
@@ -135,7 +153,7 @@ function HomePage() {
           />
         </ul>
       </section>
-    </AppShell>
+    </AppPage>
   );
 }
 
@@ -156,12 +174,14 @@ function ActivityRow({
     status === "approved"
       ? { bg: "bg-success", fg: "text-success-foreground", Icon: CircleCheck }
       : status === "blocked"
-      ? { bg: "bg-destructive", fg: "text-destructive-foreground", Icon: CircleX }
-      : { bg: "bg-accent", fg: "text-accent-foreground", Icon: Wallet };
+        ? { bg: "bg-destructive", fg: "text-destructive-foreground", Icon: CircleX }
+        : { bg: "bg-accent", fg: "text-accent-foreground", Icon: Wallet };
   const Icon = tone.Icon;
   return (
     <li className="flex items-center gap-3 rounded-2xl bg-card border border-border p-3">
-      <span className={`size-10 rounded-full flex items-center justify-center ${tone.bg} ${tone.fg}`}>
+      <span
+        className={`size-10 rounded-full flex items-center justify-center ${tone.bg} ${tone.fg}`}
+      >
         <Icon className="size-5" strokeWidth={2.2} />
       </span>
       <div className="flex-1 min-w-0">

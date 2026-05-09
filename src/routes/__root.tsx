@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import { SolanaWalletProvider } from "@/providers/solana-wallet-provider";
 
 function NotFoundComponent() {
   return (
@@ -73,10 +74,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Hoshi — A bank account for your AI agent" },
-      { name: "description", content: "Hoshi gives every AI agent a Solana identity, a programmable spending allowance, and an on-chain reputation score." },
+      {
+        name: "description",
+        content:
+          "Hoshi gives every AI agent a Solana identity, a programmable spending allowance, and an on-chain reputation score.",
+      },
       { name: "author", content: "Hoshi" },
       { property: "og:title", content: "Hoshi — A bank account for your AI agent" },
-      { property: "og:description", content: "Programmable allowances and on-chain reputation for AI agents." },
+      {
+        property: "og:description",
+        content: "Programmable allowances and on-chain reputation for AI agents.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
@@ -116,7 +124,9 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <SolanaWalletProvider>
+        <Outlet />
+      </SolanaWalletProvider>
     </QueryClientProvider>
   );
 }

@@ -1,12 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AppShell } from "@/components/app-shell";
+import { AppPage } from "@/components/app-page";
+import type { ReactNode } from "react";
 import { Copy, Sparkles, ShieldCheck, Trophy } from "lucide-react";
 
-export const Route = createFileRoute("/agent")({
+export const Route = createFileRoute("/_app/agent")({
   head: () => ({
     meta: [
       { title: "Agent profile — Hoshi" },
-      { name: "description", content: "Your agent's identity, KYA reputation, and on-chain history." },
+      {
+        name: "description",
+        content: "Your agent's identity, KYA reputation, and on-chain history.",
+      },
     ],
   }),
   component: AgentPage,
@@ -14,7 +18,7 @@ export const Route = createFileRoute("/agent")({
 
 function AgentPage() {
   return (
-    <AppShell subtitle="identity" title="Your agent">
+    <AppPage subtitle="identity" title="Your agent">
       {/* Identity card */}
       <section className="mt-2 rounded-3xl bg-card border border-border p-6 text-center">
         <div className="mx-auto size-20 rounded-full bg-ink text-ink-foreground flex items-center justify-center font-display text-3xl">
@@ -58,16 +62,28 @@ function AgentPage() {
       <section className="mt-4 rounded-3xl bg-card border border-border p-5">
         <p className="text-sm font-medium mb-3">Capabilities</p>
         <div className="space-y-3">
-          <Cap icon={<Sparkles className="size-4" />} title="Negotiate prices" sub="Up to 15% off list" />
-          <Cap icon={<ShieldCheck className="size-4" />} title="Pay freelancers" sub="Verified handles only" />
-          <Cap icon={<Sparkles className="size-4" />} title="Manage subscriptions" sub="Auto-cancel unused" />
+          <Cap
+            icon={<Sparkles className="size-4" />}
+            title="Negotiate prices"
+            sub="Up to 15% off list"
+          />
+          <Cap
+            icon={<ShieldCheck className="size-4" />}
+            title="Pay freelancers"
+            sub="Verified handles only"
+          />
+          <Cap
+            icon={<Sparkles className="size-4" />}
+            title="Manage subscriptions"
+            sub="Auto-cancel unused"
+          />
         </div>
       </section>
 
       <button className="mt-6 w-full rounded-full bg-ink text-ink-foreground py-4 font-medium">
         Share agent handle
       </button>
-    </AppShell>
+    </AppPage>
   );
 }
 
@@ -80,7 +96,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Cap({ icon, title, sub }: { icon: React.ReactNode; title: string; sub: string }) {
+function Cap({ icon, title, sub }: { icon: ReactNode; title: string; sub: string }) {
   return (
     <div className="flex items-center gap-3">
       <span className="size-9 rounded-full bg-accent text-accent-foreground flex items-center justify-center">

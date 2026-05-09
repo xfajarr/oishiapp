@@ -1,14 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { AppShell } from "@/components/app-shell";
+import { AppPage } from "@/components/app-page";
 import { Switch } from "@/components/ui/switch";
 import { Check } from "lucide-react";
 
-export const Route = createFileRoute("/rules")({
+export const Route = createFileRoute("/_app/rules")({
   head: () => ({
     meta: [
       { title: "Spending rules — Hoshi" },
-      { name: "description", content: "Set programmable allowances and recipient rules for your AI agent." },
+      {
+        name: "description",
+        content: "Set programmable allowances and recipient rules for your AI agent.",
+      },
     ],
   }),
   component: RulesPage,
@@ -21,7 +24,7 @@ function RulesPage() {
   const [allowSubs, setAllowSubs] = useState(true);
 
   return (
-    <AppShell subtitle="programmable" title="Spending rules">
+    <AppPage subtitle="programmable" title="Spending rules">
       <p className="text-sm text-muted-foreground mt-1 mb-6">
         Your agent can only do what these rules allow. Enforced on-chain.
       </p>
@@ -114,7 +117,7 @@ function RulesPage() {
       <button className="mt-6 w-full rounded-full bg-ink text-ink-foreground py-4 font-medium">
         Save rules on-chain
       </button>
-    </AppShell>
+    </AppPage>
   );
 }
 
