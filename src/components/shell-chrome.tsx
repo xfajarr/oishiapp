@@ -29,11 +29,20 @@ export function ShellChrome({ children }: { children: ReactNode }) {
 
       <div className="relative w-full max-w-[440px] min-h-screen bg-background/80 backdrop-blur-[2px] flex flex-col sm:border-x border-border/40 sm:shadow-[0_32px_120px_-48px_rgba(20,24,35,0.28)]">
         {children}
-
-        <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[408px] z-50">
-          <BottomNav pathname={pathname} />
-        </nav>
       </div>
+
+      {/*
+        Keep nav outside the backdrop-blur column: blur creates a containing block, so fixed
+        descendants anchor to the (possibly very tall) column instead of the viewport.
+      */}
+      <nav
+        className="fixed z-50 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[408px] pointer-events-none bottom-[max(1rem,env(safe-area-inset-bottom,0px))]"
+        aria-label="App navigation"
+      >
+        <div className="pointer-events-auto">
+          <BottomNav pathname={pathname} />
+        </div>
+      </nav>
     </div>
   );
 }
