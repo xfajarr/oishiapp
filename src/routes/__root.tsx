@@ -9,7 +9,6 @@ import {
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
-import { PageTransition } from "@/components/page-transition";
 
 function NotFoundComponent() {
   return (
@@ -77,14 +76,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: "Hoshi gives every AI agent a Solana identity, a programmable spending allowance, and an on-chain reputation score." },
       { name: "author", content: "Hoshi" },
       { property: "og:title", content: "Hoshi — A bank account for your AI agent" },
-      { property: "og:description", content: "Hoshi gives every AI agent a Solana identity, a programmable spending allowance, and an on-chain reputation score." },
+      { property: "og:description", content: "Programmable allowances and on-chain reputation for AI agents." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Hoshi — A bank account for your AI agent" },
-      { name: "twitter:description", content: "Hoshi gives every AI agent a Solana identity, a programmable spending allowance, and an on-chain reputation score." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/abfa9f44-a251-4aad-aea1-f8e85f80a8af/id-preview-933f4a73--1cc7a81c-4842-4db9-b854-c6cf20d24ada.lovable.app-1778361174648.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/abfa9f44-a251-4aad-aea1-f8e85f80a8af/id-preview-933f4a73--1cc7a81c-4842-4db9-b854-c6cf20d24ada.lovable.app-1778361174648.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -121,9 +116,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <PageTransition>
-        <Outlet />
-      </PageTransition>
+      <Outlet />
     </QueryClientProvider>
   );
 }

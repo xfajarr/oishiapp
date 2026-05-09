@@ -1,6 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { Home, Shield, Activity, Sparkles } from "lucide-react";
-import { motion, LayoutGroup } from "framer-motion";
 import type { ReactNode } from "react";
 
 const tabs = [
@@ -47,37 +46,28 @@ export function AppShell({
 
         {/* Bottom nav */}
         <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[408px] z-50">
-          <LayoutGroup id="bottom-nav">
-            <div className="bg-ink text-ink-foreground rounded-full px-2 py-2 flex items-center justify-between shadow-[0_8px_30px_-8px_rgba(0,0,0,0.35)]">
-              {tabs.map(({ to, label, icon: Icon }) => {
-                const active = pathname === to;
-                return (
-                  <Link
-                    key={to}
-                    to={to}
-                    className="relative flex items-center gap-2 px-4 py-2.5 rounded-full transition-colors"
-                  >
-                    {active && (
-                      <motion.span
-                        layoutId="nav-pill"
-                        className="absolute inset-0 rounded-full bg-accent"
-                        transition={{ type: "spring", stiffness: 500, damping: 38 }}
-                      />
-                    )}
-                    <span
-                      className={[
-                        "relative z-10 inline-flex items-center gap-2",
-                        active ? "text-accent-foreground" : "text-ink-foreground/70",
-                      ].join(" ")}
-                    >
-                      <Icon className="size-4" strokeWidth={2.2} />
-                      {active && <span className="text-xs font-medium">{label}</span>}
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          </LayoutGroup>
+          <div className="bg-ink text-ink-foreground rounded-full px-2 py-2 flex items-center justify-between shadow-[0_8px_30px_-8px_rgba(0,0,0,0.35)]">
+            {tabs.map(({ to, label, icon: Icon }) => {
+              const active = pathname === to;
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  className={[
+                    "flex items-center gap-2 px-4 py-2.5 rounded-full transition-all",
+                    active
+                      ? "bg-accent text-accent-foreground"
+                      : "text-ink-foreground/70 hover:text-ink-foreground",
+                  ].join(" ")}
+                >
+                  <Icon className="size-4" strokeWidth={2.2} />
+                  {active && (
+                    <span className="text-xs font-medium">{label}</span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
         </nav>
       </div>
     </div>
