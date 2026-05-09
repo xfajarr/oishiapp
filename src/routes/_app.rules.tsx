@@ -7,7 +7,7 @@ import { Check } from "lucide-react";
 export const Route = createFileRoute("/_app/rules")({
   head: () => ({
     meta: [
-      { title: "Spending rules — Hoshi" },
+      { title: "Spending rules — Oishi" },
       {
         name: "description",
         content: "Set programmable allowances and recipient rules for your AI agent.",
@@ -97,7 +97,7 @@ function RulesPage() {
         </div>
         <ul className="space-y-2">
           {[
-            { h: "@freelancer.hoshi", t: "Designer" },
+            { h: "@freelancer.oishi", t: "Designer" },
             { h: "@cursor.app", t: "Subscription" },
             { h: "@vercel.bill", t: "Subscription" },
           ].map((r) => (

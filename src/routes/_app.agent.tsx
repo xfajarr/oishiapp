@@ -6,7 +6,7 @@ import { Copy, Sparkles, ShieldCheck, Trophy } from "lucide-react";
 export const Route = createFileRoute("/_app/agent")({
   head: () => ({
     meta: [
-      { title: "Agent profile — Hoshi" },
+      { title: "Agent profile — Oishi" },
       {
         name: "description",
         content: "Your agent's identity, KYA reputation, and on-chain history.",
@@ -24,7 +24,7 @@ function AgentPage() {
         <div className="mx-auto size-20 rounded-full bg-ink text-ink-foreground flex items-center justify-center font-display text-3xl">
           a
         </div>
-        <p className="mt-4 font-display text-3xl">@alice.hoshi</p>
+        <p className="mt-4 font-display text-3xl">@alice.oishi</p>
         <p className="text-xs text-muted-foreground mt-1">Solana identity · since May 2026</p>
 
         <button className="mt-4 inline-flex items-center gap-2 rounded-full bg-secondary px-4 py-2 text-xs font-mono">

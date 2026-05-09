@@ -5,7 +5,7 @@ import { CircleCheck, CircleX, Wallet, ArrowDownLeft, ArrowUpRight, Sparkles } f
 export const Route = createFileRoute("/_app/activity")({
   head: () => ({
     meta: [
-      { title: "Activity — Hoshi" },
+      { title: "Activity — Oishi" },
       {
         name: "description",
         content: "Transparent, on-chain log of every action your agent takes.",
@@ -31,7 +31,7 @@ const items: Item[] = [
     id: "1",
     group: "Today",
     status: "approved",
-    title: "Sent $30 to @freelancer.hoshi",
+    title: "Sent $30 to @freelancer.oishi",
     sub: "Within rules · verified recipient",
     amount: "-$30.00",
     time: "Just now",

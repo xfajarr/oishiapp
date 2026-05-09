@@ -1,11 +1,14 @@
 "use client";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { HoshiMark } from "@/components/hoshi-mark";
+import { OishiMark } from "@/components/oishi-mark";
 import {
   ArrowRight,
   Bot,
+  Code2,
+  ExternalLink,
   Flame,
+  Share2,
   ShieldCheck,
   Sparkles,
   Wallet,
@@ -18,11 +21,11 @@ import type { ReactNode } from "react";
 export const Route = createFileRoute("/landing")({
   head: () => ({
     meta: [
-      { title: "Hoshi — The wallet your agent can't wreck" },
+      { title: "Oishi — The wallet your agent can't wreck" },
       {
         name: "description",
         content:
-          "Programmable spending for AI agents: Solana-native wallet, LI.FI routing, rules on-chain, and KYA reputation.",
+          "Programmable spending for AI agents: Solana-native wallet, LI.FI routing, OKX x402 · MPP · APP alignment, on-chain rules, and KYA reputation.",
       },
     ],
   }),
@@ -62,9 +65,9 @@ function LandingPage() {
           transition={{ duration: 0.45, ease: easeOut }}
         >
           <div className="flex items-center gap-3 min-w-0">
-            <HoshiMark />
+            <OishiMark />
             <span className="font-display text-2xl sm:text-3xl lg:text-4xl tracking-tight truncate">
-              Hoshi
+              Oishi
             </span>
           </div>
           <Link
@@ -119,7 +122,7 @@ function LandingPage() {
                   to="/onboarding"
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-ink text-ink-foreground px-6 sm:px-8 py-3.5 sm:py-4 text-sm font-medium shadow-[0_12px_40px_-16px_rgba(0,0,0,0.35)] hover:opacity-95 transition-opacity min-h-[3rem]"
                 >
-                  Open Hoshi <ArrowRight className="size-4 shrink-0" strokeWidth={2.2} />
+                  Open Oishi <ArrowRight className="size-4 shrink-0" strokeWidth={2.2} />
                 </Link>
                 <a
                   href="#how"
@@ -186,7 +189,7 @@ function LandingPage() {
               <p className="font-display text-2xl sm:text-3xl lg:text-4xl leading-[1.12] text-balance lg:flex-1">
                 LLMs don&apos;t understand money — they pattern-match it.{" "}
                 <span className="text-muted-foreground">
-                  Hoshi is the adult in the room when code starts swiping the card.
+                  Oishi is the adult in the room when code starts swiping the card.
                 </span>
               </p>
               <div className="mt-6 lg:mt-0 flex flex-wrap justify-center lg:justify-end gap-2 shrink-0">
@@ -249,16 +252,60 @@ function LandingPage() {
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   Stop hand-rolling swaps and bridge UX. Let liquidity find the shortest honest path
-                  while Hoshi keeps the spend envelope tight.
+                  while Oishi keeps the spend envelope tight.
                 </p>
               </div>
+            </div>
+          </FadeUp>
+
+          {/* OKX agent payments: x402, MPP, APP */}
+          <FadeUp className="mt-14 sm:mt-16 lg:mt-24" delay={0.07}>
+            <div className="rounded-3xl border border-border bg-gradient-to-br from-card via-card to-accent/5 p-6 sm:p-8 lg:p-10">
+              <p className="text-xs sm:text-sm uppercase tracking-[0.18em] text-muted-foreground">
+                OKX Onchain OS · agent-native commerce
+              </p>
+              <h2 className="font-display text-2xl sm:text-3xl lg:text-4xl mt-3 sm:mt-4 max-w-3xl leading-tight text-balance">
+                Same vocabulary as the protocols teaching agents how to do business — not just fire
+                HTTP requests.
+              </h2>
+              <p className="text-sm sm:text-base text-muted-foreground mt-4 max-w-2xl leading-relaxed">
+                OKX builds on open rails like{" "}
+                <strong className="font-medium text-foreground">x402</strong> and{" "}
+                <strong className="font-medium text-foreground">MPP</strong>, then packages the full
+                negotiate → pay → settle loop as{" "}
+                <strong className="font-medium text-foreground">APP</strong> (Agent Payments
+                Protocol). Oishi meets agents where those standards already want to live.
+              </p>
+              <ul className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+                <OkxProtocolCard
+                  icon={<Code2 className="size-5" strokeWidth={2.2} />}
+                  name="x402"
+                  tag="Paid HTTP, machine-readable"
+                  body="HTTP 402 responses carry structured payment requirements so tools and MCP callers discover price, prove funds, and settle — no bespoke checkout per API."
+                  href="https://web3.okx.com/onchainos/dev-docs/payments/x402-introduction"
+                />
+                <OkxProtocolCard
+                  icon={<Share2 className="size-5" strokeWidth={2.2} />}
+                  name="MPP"
+                  tag="Multi-party payment flows"
+                  body="The companion layer to x402 for commerce that isn’t a single tap: escrow, high-frequency batching, and broker-orchestrated payouts across parties."
+                  href="https://web3.okx.com/onchainos/dev-docs/payments/core-concept"
+                />
+                <OkxProtocolCard
+                  icon={<Bot className="size-5" strokeWidth={2.2} />}
+                  name="APP"
+                  tag="Agent Payments Protocol"
+                  body="OKX’s open standard for quote, method choice, signature, and settlement over HTTP, agent dialogue, or IM — from one-shot charges to metered sessions and escrow."
+                  href="https://web3.okx.com/onchainos/dev-docs/payments/app"
+                />
+              </ul>
             </div>
           </FadeUp>
 
           {/* Truth bullets */}
           <FadeUp className="mt-14 sm:mt-16 lg:mt-24" delay={0.08}>
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl max-w-3xl">
-              Three truths every agent team learns the hard way — unless you wire Hoshi first.
+              Three truths every agent team learns the hard way — unless you wire Oishi first.
             </h2>
             <ul className="mt-8 sm:mt-10 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
               <li className="rounded-3xl border border-dashed border-border/80 bg-muted/30 p-5 sm:p-6">
@@ -287,7 +334,7 @@ function LandingPage() {
           <section className="mt-14 sm:mt-16 lg:mt-24">
             <FadeUp>
               <h2 className="text-xs sm:text-sm uppercase tracking-[0.18em] text-muted-foreground mb-4 sm:mb-6 lg:mb-8">
-                Why Hoshi
+                Why Oishi
               </h2>
             </FadeUp>
             <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
@@ -370,11 +417,45 @@ function LandingPage() {
 
         <footer className="py-8 sm:py-10 border-t border-border/60">
           <p className="text-xs sm:text-sm text-muted-foreground text-center max-w-lg mx-auto px-2">
-            Hoshi — programmable money for agents that ship without apology.
+            Oishi — programmable money for agents that ship without apology.
           </p>
         </footer>
       </div>
     </div>
+  );
+}
+
+function OkxProtocolCard({
+  icon,
+  name,
+  tag,
+  body,
+  href,
+}: {
+  icon: ReactNode;
+  name: string;
+  tag: string;
+  body: string;
+  href: string;
+}) {
+  return (
+    <li className="rounded-2xl bg-background/80 border border-border/80 p-5 sm:p-6 flex flex-col h-full shadow-sm">
+      <span className="size-11 shrink-0 rounded-2xl bg-secondary flex items-center justify-center text-foreground">
+        {icon}
+      </span>
+      <p className="mt-4 font-display text-xl sm:text-2xl tracking-tight">{name}</p>
+      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mt-1">{tag}</p>
+      <p className="text-sm text-muted-foreground mt-3 leading-relaxed flex-1">{body}</p>
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-accent-foreground hover:underline underline-offset-4"
+      >
+        OKX docs
+        <ExternalLink className="size-3.5 shrink-0 opacity-80" strokeWidth={2.2} />
+      </a>
+    </li>
   );
 }
 

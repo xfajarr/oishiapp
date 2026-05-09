@@ -73,14 +73,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Hoshi — A bank account for your AI agent" },
+      { title: "Oishi — A bank account for your AI agent" },
       {
         name: "description",
         content:
-          "Hoshi gives every AI agent a Solana identity, a programmable spending allowance, and an on-chain reputation score.",
+          "Oishi gives every AI agent a Solana identity, a programmable spending allowance, and an on-chain reputation score.",
       },
-      { name: "author", content: "Hoshi" },
-      { property: "og:title", content: "Hoshi — A bank account for your AI agent" },
+      { name: "author", content: "Oishi" },
+      { property: "og:title", content: "Oishi — A bank account for your AI agent" },
       {
         property: "og:description",
         content: "Programmable allowances and on-chain reputation for AI agents.",

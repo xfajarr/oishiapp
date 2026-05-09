@@ -1,13 +1,13 @@
-export function HoshiMark({ className = "" }: { className?: string }) {
+export function OishiMark({ className = "" }: { className?: string }) {
   return (
     <div
       className={
         "inline-flex items-center justify-center size-9 rounded-full bg-ink text-ink-foreground font-display text-lg " +
         className
       }
-      aria-label="Hoshi"
+      aria-label="Oishi"
     >
-      h
+      o
     </div>
   );
 }

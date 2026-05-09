@@ -14,7 +14,7 @@ import { AppPage } from "@/components/app-page";
 export const Route = createFileRoute("/_app/")({
   head: () => ({
     meta: [
-      { title: "Hoshi — Your agent's wallet" },
+      { title: "Oishi — Your agent's wallet" },
       {
         name: "description",
         content: "Programmable allowances and on-chain reputation for AI agents on Solana.",
@@ -36,7 +36,7 @@ function HomePage() {
               Agent wallet
             </span>
           </div>
-          <span className="text-xs font-mono text-ink-foreground/60">@alice.hoshi</span>
+          <span className="text-xs font-mono text-ink-foreground/60">@alice.oishi</span>
         </div>
 
         <div className="mt-6">
@@ -132,7 +132,7 @@ function HomePage() {
         <ul className="space-y-2">
           <ActivityRow
             status="approved"
-            title="Sent to @freelancer.hoshi"
+            title="Sent to @freelancer.oishi"
             sub="Payment · within rules"
             amount="-$30.00"
             time="now"

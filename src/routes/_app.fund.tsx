@@ -25,7 +25,7 @@ import type { ReactNode } from "react";
 export const Route = createFileRoute("/_app/fund")({
   head: () => ({
     meta: [
-      { title: "Fund agent — Hoshi" },
+      { title: "Fund agent — Oishi" },
       {
         name: "description",
         content: "Bridge funds from Arbitrum to your agent's Solana wallet via LI.FI.",

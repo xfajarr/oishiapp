@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { HoshiMark } from "@/components/hoshi-mark";
+import { OishiMark } from "@/components/oishi-mark";
 import { useEffect } from "react";
 import { ArrowRight } from "lucide-react";
 
@@ -19,8 +19,8 @@ function parseRedirect(raw: unknown): string | undefined {
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
     meta: [
-      { title: "Connect wallet — Hoshi" },
-      { name: "description", content: "Connect a Solana wallet to use Hoshi." },
+      { title: "Connect wallet — Oishi" },
+      { name: "description", content: "Connect a Solana wallet to use Oishi." },
     ],
   }),
   validateSearch: (search: Record<string, unknown>): OnboardingSearch => ({
@@ -54,7 +54,7 @@ function OnboardingPage() {
       />
 
       <div className="relative w-full max-w-[440px] min-h-screen flex flex-col items-center justify-center px-6 py-16 sm:border-x border-border/40">
-        <HoshiMark className="size-12 text-2xl mb-8" />
+        <OishiMark className="size-12 text-2xl mb-8" />
 
         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground text-center">
           Step one
@@ -63,7 +63,7 @@ function OnboardingPage() {
           Connect your Solana wallet
         </h1>
         <p className="text-sm text-muted-foreground text-center mt-3 max-w-sm">
-          Hoshi keeps funds and rules on-chain. Connect with Phantom or Solflare to continue.
+          Oishi keeps funds and rules on-chain. Connect with Phantom or Solflare to continue.
         </p>
 
         <div className="mt-10 w-full max-w-xs flex flex-col items-center gap-4">
