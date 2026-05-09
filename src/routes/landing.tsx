@@ -6,9 +6,9 @@ import {
   ArrowRight,
   Bot,
   Code2,
+  Cpu,
   ExternalLink,
   Flame,
-  Share2,
   ShieldCheck,
   Sparkles,
   Wallet,
@@ -271,7 +271,8 @@ function LandingPage() {
               <p className="text-sm sm:text-base text-muted-foreground mt-4 max-w-2xl leading-relaxed">
                 OKX builds on open rails like{" "}
                 <strong className="font-medium text-foreground">x402</strong> and{" "}
-                <strong className="font-medium text-foreground">MPP</strong>, then packages the full
+                <strong className="font-medium text-foreground">MPP</strong> (Machine Payments
+                Protocol), then packages the full negotiate → pay → settle loop as{" "}
                 negotiate → pay → settle loop as{" "}
                 <strong className="font-medium text-foreground">APP</strong> (Agent Payments
                 Protocol). Oishi meets agents where those standards already want to live.
@@ -282,14 +283,16 @@ function LandingPage() {
                   name="x402"
                   tag="Paid HTTP, machine-readable"
                   body="HTTP 402 responses carry structured payment requirements so tools and MCP callers discover price, prove funds, and settle — no bespoke checkout per API."
-                  href="https://web3.okx.com/onchainos/dev-docs/payments/x402-introduction"
+                  href="https://x402.org"
+                  linkLabel="x402.org"
                 />
                 <OkxProtocolCard
-                  icon={<Share2 className="size-5" strokeWidth={2.2} />}
+                  icon={<Cpu className="size-5" strokeWidth={2.2} />}
                   name="MPP"
-                  tag="Multi-party payment flows"
-                  body="The companion layer to x402 for commerce that isn’t a single tap: escrow, high-frequency batching, and broker-orchestrated payouts across parties."
-                  href="https://web3.okx.com/onchainos/dev-docs/payments/core-concept"
+                  tag="Machine Payments Protocol"
+                  body="A machine-native payment layer: software discovers terms, authorizes spends, and settles programmatically — the open standard that sits alongside x402 for automated commerce."
+                  href="https://mpp.dev"
+                  linkLabel="mpp.dev"
                 />
                 <OkxProtocolCard
                   icon={<Bot className="size-5" strokeWidth={2.2} />}
@@ -431,12 +434,14 @@ function OkxProtocolCard({
   tag,
   body,
   href,
+  linkLabel = "OKX docs",
 }: {
   icon: ReactNode;
   name: string;
   tag: string;
   body: string;
   href: string;
+  linkLabel?: string;
 }) {
   return (
     <li className="rounded-2xl bg-background/80 border border-border/80 p-5 sm:p-6 flex flex-col h-full shadow-sm">
@@ -452,7 +457,7 @@ function OkxProtocolCard({
         rel="noopener noreferrer"
         className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-accent-foreground hover:underline underline-offset-4"
       >
-        OKX docs
+        {linkLabel}
         <ExternalLink className="size-3.5 shrink-0 opacity-80" strokeWidth={2.2} />
       </a>
     </li>
