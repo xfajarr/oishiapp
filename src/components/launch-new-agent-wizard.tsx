@@ -165,7 +165,7 @@ export function LaunchNewAgentWizard({ presetStrategy }: { presetStrategy?: Stra
       createdId = created.id;
       setLaunchPhase("creating");
 
-      await new Promise((r) => setTimeout(r, 800));
+      await new Promise((r) => setTimeout(r, 150));
 
       setLaunchPhase("onchain");
       console.log("[oishi] Requesting on-chain registration tx for", created.id);
