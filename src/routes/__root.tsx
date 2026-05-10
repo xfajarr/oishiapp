@@ -10,6 +10,7 @@ import {
 
 import appCss from "../styles.css?url";
 import { SolanaWalletProvider } from "@/providers/solana-wallet-provider";
+import { EvmWalletProvider } from "@/providers/evm-wallet-provider";
 
 function NotFoundComponent() {
   return (
@@ -124,9 +125,11 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SolanaWalletProvider>
-        <Outlet />
-      </SolanaWalletProvider>
+      <EvmWalletProvider>
+        <SolanaWalletProvider>
+          <Outlet />
+        </SolanaWalletProvider>
+      </EvmWalletProvider>
     </QueryClientProvider>
   );
 }

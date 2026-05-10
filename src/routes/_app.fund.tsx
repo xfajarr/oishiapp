@@ -1,4 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi";
+import { injected } from "wagmi/connectors";
+import { arbitrum, base, mainnet } from "wagmi/chains";
 import { AppPage } from "@/components/app-page";
 import {
   IconArbitrum,
@@ -109,7 +112,19 @@ function FundPage() {
   const [progress, setProgress] = useState(0);
   const [stepIndex, setStepIndex] = useState(0);
 
-  // ── Real LI.FI quote state ────────────────────────────────────────
+  // ── EVM wallet ──────────────────────────────────────────────────
+  const { address: evmAddress, isConnected: evmConnected, chainId: evmChainId } = useAccount();
+  const { connect, connectors } = useConnect();
+  const { disconnect } = useDisconnect();
+  const { switchChain } = useSwitchChain();
+
+  const chainToWagmi: Record<ChainId, typeof arbitrum | typeof mainnet | typeof base> = {
+    arbitrum,
+    ethereum: mainnet,
+    base,
+  };
+
+  // ── Real LI.FI quote state ──────────────────────────────────────
   const [lifiQuote, setLifiQuote] = useState<LifiQuoteResult | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
@@ -163,6 +178,7 @@ function FundPage() {
         fromToken: tokenAddr,
         toToken: "",
         fromAmount: weiAmount,
+        fromAddress: evmAddress ?? "",
       });
 
       if (!controller.signal.aborted) {
@@ -180,7 +196,7 @@ function FundPage() {
         setQuoteLoading(false);
       }
     }
-  }, [debouncedAmount, chainId, tokenId, tokenMeta.label]);
+  }, [debouncedAmount, chainId, tokenId, tokenMeta.label, evmAddress]);
 
   useEffect(() => {
     if (phase === "idle") {
@@ -337,6 +353,59 @@ function FundPage() {
 
       {/* ── Source + Route ───────────────────────────────────────── */}
       <section className="mt-4 rounded-3xl bg-card border border-border p-5 space-y-5">
+        {/* ── EVM Wallet ────────────────────────────────────────── */}
+        {interactive && (
+          <div>
+            <p className="text-sm font-medium mb-3">Source wallet</p>
+            {evmConnected && evmAddress ? (
+              <div className="flex items-center justify-between rounded-2xl bg-secondary px-4 py-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  {evmChainId === mainnet.id ? (
+                    <IconEthereum className="size-5 shrink-0" />
+                  ) : evmChainId === arbitrum.id ? (
+                    <IconArbitrum className="size-5 shrink-0" />
+                  ) : evmChainId === base.id ? (
+                    <IconBase className="size-5 shrink-0" />
+                  ) : (
+                    <IconEthereum className="size-5 shrink-0" />
+                  )}
+                  <span className="text-sm font-mono truncate">
+                    {evmAddress.slice(0, 6)}…{evmAddress.slice(-4)}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => disconnect()}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Disconnect
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => connect({ connector: connectors.find((c) => c.id === "injected") ?? connectors[0] })}
+                  className="w-full rounded-2xl border border-border bg-secondary px-4 py-3 text-sm font-medium flex items-center justify-center gap-2 hover:bg-secondary/80 transition-colors"
+                >
+                  <IconEthereum className="size-4" />
+                  Connect MetaMask / EVM wallet
+                </button>
+                {connectors.some((c) => c.id === "walletConnect") && (
+                  <button
+                    type="button"
+                    onClick={() => connect({ connector: connectors.find((c) => c.id === "walletConnect")! })}
+                    className="w-full rounded-2xl border border-border bg-secondary px-4 py-3 text-sm font-medium flex items-center justify-center gap-2 hover:bg-secondary/80 transition-colors"
+                  >
+                    <img src="/images/walletconnect.svg" alt="WalletConnect" className="size-4" />
+                    WalletConnect
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         <div>
           <p className="text-sm font-medium mb-3">Source</p>
           <div className="grid grid-cols-2 gap-3">
