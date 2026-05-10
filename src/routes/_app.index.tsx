@@ -74,45 +74,44 @@ function HomePage() {
     );
   }
 
-  // ── No agent created ────────────────────────────────────
-  if (!hasAgent) {
-    return (
-      <AppPage title="Dashboard">
-        <section className="mt-12 text-center">
-          <div className="mx-auto size-16 rounded-full bg-accent/10 flex items-center justify-center">
-            <Bot className="size-7 text-accent" />
-          </div>
-          <h2 className="mt-4 text-lg font-semibold">No agent yet</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Launch your first AI agent and give it a strategy on Solana.
-          </p>
-          <Link
-            to="/launch"
-            className="mt-4 inline-flex items-center gap-2 rounded-full bg-ink text-ink-foreground px-6 py-3 text-sm font-medium"
-          >
-            <Sparkles className="size-4" />
-            Launch your agent
-          </Link>
-        </section>
-      </AppPage>
-    );
-  }
-
-  // ── Main dashboard ──────────────────────────────────────
+  // ── No agent created — show full dashboard + launch prompt ────
   return (
     <AppPage title="Dashboard">
-      {/* ── Agent identity bar ──────────────────────────── */}
-      <div className="mt-2 flex items-center justify-between">
+      {/* ── Launch prompt (only if no agent) ──────────────────── */}
+      {!hasAgent && (
+        <Link
+          to="/launch"
+          className="mt-2 flex items-center gap-3 rounded-2xl bg-accent/10 border border-accent/20 px-4 py-3 hover:bg-accent/15 transition-colors"
+        >
+          <span className="size-10 shrink-0 rounded-full bg-accent text-white flex items-center justify-center">
+            <Bot className="size-5" />
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium">Launch your agent</p>
+            <p className="text-xs text-muted-foreground">Pick a strategy and deploy on-chain</p>
+          </div>
+          <ArrowUpRight className="size-4 text-muted-foreground shrink-0" />
+        </Link>
+      )}
+
+      {/* ── Agent identity bar ────────────────────────────────── */}
+      <div className="mt-3 flex items-center justify-between">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="size-2 rounded-full bg-accent animate-pulse" />
+          <span className={`size-2 rounded-full ${hasAgent ? "bg-accent animate-pulse" : "bg-muted-foreground/40"}`} />
           <span className="text-sm font-medium truncate">
-            {agent.displayName || agent.handle}
+            {hasAgent ? (agent!.displayName || agent!.handle) : "No agent"}
           </span>
-          <span className="text-xs text-muted-foreground font-mono truncate">
-            {agent.handle}
-          </span>
+          {hasAgent && (
+            <span className="text-xs text-muted-foreground font-mono truncate">
+              {agent!.handle}
+            </span>
+          )}
         </div>
-        <KyaBadge score={agent.reputationScore} tier={agent.tier} />
+        {hasAgent ? (
+          <KyaBadge score={agent!.reputationScore} tier={agent!.tier} />
+        ) : (
+          <span className="text-xs text-muted-foreground">Unregistered</span>
+        )}
       </div>
 
       {/* ── Balance card ────────────────────────────────── */}
@@ -164,39 +163,48 @@ function HomePage() {
             <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
               KYA reputation
             </p>
-            <p className="font-display text-3xl mt-1 capitalize">
-              {agent.tier} · {agent.reputationScore}
-            </p>
+            {hasAgent ? (
+              <p className="font-display text-3xl mt-1 capitalize">
+                {agent!.tier} · {agent!.reputationScore}
+              </p>
+            ) : (
+              <p className="font-display text-3xl mt-1 text-muted-foreground">
+                Unregistered
+              </p>
+            )}
           </div>
           <div className="text-right">
             <p className="text-xs text-muted-foreground">Attestations</p>
-            <p className="text-accent font-medium tabular">{agent.attestationCount}</p>
+            <p className="text-accent font-medium tabular">
+              {hasAgent ? agent!.attestationCount : "—"}
+            </p>
           </div>
         </div>
-        {/* ── Score bar ──────────────────────────────────── */}
         <div className="mt-4 h-2 rounded-full bg-secondary overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-700"
             style={{
-              width: `${Math.min(100, agent.reputationScore)}%`,
-              backgroundColor:
-                agent.tier === "gold"
+              width: hasAgent ? `${Math.min(100, agent!.reputationScore)}%` : "0%",
+              backgroundColor: hasAgent
+                ? agent!.tier === "gold"
                   ? "#f59e0b"
-                  : agent.tier === "green"
+                  : agent!.tier === "green"
                     ? "#22c55e"
-                    : agent.tier === "yellow"
+                    : agent!.tier === "yellow"
                       ? "#eab308"
-                      : "#ef4444",
+                      : "#ef4444"
+                : "#6b7280",
             }}
           />
         </div>
         <div className="mt-2 flex justify-between text-[10px] text-muted-foreground">
-          <span>0</span>
-          <span>25</span>
-          <span>70</span>
-          <span>90</span>
-          <span>100</span>
+          <span>0</span><span>25</span><span>70</span><span>90</span><span>100</span>
         </div>
+        {!hasAgent && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Launch an agent to build on-chain reputation.
+          </p>
+        )}
       </section>
 
       {/* ── Recent activity ──────────────────────────────── */}
