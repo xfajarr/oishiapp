@@ -3,18 +3,18 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import {
   ArrowUpRight,
   BadgeCheck,
+  Bot,
   LayoutGrid,
+  MessageSquare,
   Plus,
-  Wallet,
-  CircleCheck,
-  CircleX,
   Shield,
   Sparkles,
-  Bot,
-  Loader2,
 } from "lucide-react";
 import { AppPage } from "@/components/app-page";
-import { useBalances, useAgentByOwner, type AgentIdentity } from "@/hooks/use-solana-data";
+import { useBalances } from "@/hooks/use-solana-data";
+import { useUiAgent } from "@/hooks/use-ui-agent";
+import { cn } from "@/lib/utils";
+import type { AgentIdentity } from "@/hooks/use-solana-data";
 
 export const Route = createFileRoute("/_app/")({
   head: () => ({
@@ -32,10 +32,9 @@ export const Route = createFileRoute("/_app/")({
 function HomePage() {
   const { publicKey, connected } = useWallet();
   const { data: balances, isLoading: balanceLoading } = useBalances(publicKey ?? null);
-  const { data: agent, isLoading: agentLoading } = useAgentByOwner(publicKey ?? null);
+  const { uiAgent, hasAgent, isLoading: agentIdentityLoading, agent } = useUiAgent();
 
-  const isLoading = balanceLoading || agentLoading;
-  const hasAgent = !!agent;
+  const isLoading = balanceLoading || agentIdentityLoading;
   const totalUsd = (balances?.solUsd ?? 0) + (balances?.usdcUsd ?? 0);
 
   // ── No wallet connected ─────────────────────────────────
@@ -81,6 +80,7 @@ function HomePage() {
       {!hasAgent && (
         <Link
           to="/launch"
+          search={{ tab: "new" }}
           className="mt-2 flex items-center gap-3 rounded-2xl bg-accent/10 border border-accent/20 px-4 py-3 hover:bg-accent/15 transition-colors"
         >
           <span className="size-10 shrink-0 rounded-full bg-accent text-white flex items-center justify-center">
@@ -97,18 +97,20 @@ function HomePage() {
       {/* ── Agent identity bar ────────────────────────────────── */}
       <div className="mt-3 flex items-center justify-between">
         <div className="flex items-center gap-2 min-w-0">
-          <span className={`size-2 rounded-full ${hasAgent ? "bg-accent animate-pulse" : "bg-muted-foreground/40"}`} />
+          <span
+            className={`size-2 rounded-full ${hasAgent ? "bg-accent animate-pulse" : "bg-muted-foreground/40"}`}
+          />
           <span className="text-sm font-medium truncate">
-            {hasAgent ? (agent!.displayName || agent!.handle) : "No agent"}
+            {uiAgent ? uiAgent.displayName || uiAgent.handle : "No agent"}
           </span>
-          {hasAgent && (
+          {uiAgent ? (
             <span className="text-xs text-muted-foreground font-mono truncate">
-              {agent!.handle}
+              {uiAgent.handle}
             </span>
-          )}
+          ) : null}
         </div>
-        {hasAgent ? (
-          <KyaBadge score={agent!.reputationScore} tier={agent!.tier} />
+        {uiAgent ? (
+          <KyaBadge score={uiAgent.reputationScore} tier={uiAgent.tier} />
         ) : (
           <span className="text-xs text-muted-foreground">Unregistered</span>
         )}
@@ -126,7 +128,10 @@ function HomePage() {
           <p className="font-display text-6xl tabular leading-none">
             ${Math.floor(totalUsd).toLocaleString()}
             <span className="text-ink-foreground/40">
-              .{Math.round((totalUsd % 1) * 100).toString().padStart(2, "0")}
+              .
+              {Math.round((totalUsd % 1) * 100)
+                .toString()
+                .padStart(2, "0")}
             </span>
           </p>
           <div className="mt-2 flex gap-4 text-sm text-ink-foreground/60">
@@ -135,15 +140,19 @@ function HomePage() {
           </div>
         </div>
 
-        {/* ── Total value ────────────────────────────────── */}
         <div className="mt-5 pt-3 border-t border-ink-foreground/10 text-xs text-ink-foreground/50">
           ≈ ${totalUsd.toFixed(2)} USD
         </div>
       </section>
 
       {/* ── Quick actions ────────────────────────────────── */}
-      <section className="mt-4 grid grid-cols-3 gap-3">
-        <QuickAction to="/fund" icon={<Plus className="size-4" strokeWidth={2.4} />} label="Fund" accent />
+      <section className={cn("mt-4 grid gap-3", uiAgent ? "grid-cols-2" : "grid-cols-3")}>
+        <QuickAction
+          to="/fund"
+          icon={<Plus className="size-4" strokeWidth={2.4} />}
+          label="Fund"
+          accent
+        />
         <QuickAction
           to="/profile"
           icon={<BadgeCheck className="size-4" strokeWidth={2.35} />}
@@ -154,6 +163,14 @@ function HomePage() {
           icon={<LayoutGrid className="size-4" strokeWidth={2.2} />}
           label="Strategies"
         />
+        {uiAgent ? (
+          <QuickAction
+            to="/launch"
+            search={{ tab: "active" }}
+            icon={<MessageSquare className="size-4" strokeWidth={2.2} />}
+            label="Ask agent"
+          />
+        ) : null}
       </section>
 
       {/* ── KYA reputation ───────────────────────────────── */}
@@ -163,20 +180,18 @@ function HomePage() {
             <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
               KYA reputation
             </p>
-            {hasAgent ? (
+            {uiAgent ? (
               <p className="font-display text-3xl mt-1 capitalize">
-                {agent!.tier} · {agent!.reputationScore}
+                {uiAgent.tier} · {uiAgent.reputationScore}
               </p>
             ) : (
-              <p className="font-display text-3xl mt-1 text-muted-foreground">
-                Unregistered
-              </p>
+              <p className="font-display text-3xl mt-1 text-muted-foreground">Unregistered</p>
             )}
           </div>
           <div className="text-right">
             <p className="text-xs text-muted-foreground">Attestations</p>
             <p className="text-accent font-medium tabular">
-              {hasAgent ? agent!.attestationCount : "—"}
+              {uiAgent ? uiAgent.attestationCount : "—"}
             </p>
           </div>
         </div>
@@ -184,13 +199,13 @@ function HomePage() {
           <div
             className="h-full rounded-full transition-all duration-700"
             style={{
-              width: hasAgent ? `${Math.min(100, agent!.reputationScore)}%` : "0%",
-              backgroundColor: hasAgent
-                ? agent!.tier === "gold"
+              width: uiAgent ? `${Math.min(100, uiAgent.reputationScore)}%` : "0%",
+              backgroundColor: uiAgent
+                ? uiAgent.tier === "gold"
                   ? "#f59e0b"
-                  : agent!.tier === "green"
+                  : uiAgent.tier === "green"
                     ? "#22c55e"
-                    : agent!.tier === "yellow"
+                    : uiAgent.tier === "yellow"
                       ? "#eab308"
                       : "#ef4444"
                 : "#6b7280",
@@ -198,7 +213,11 @@ function HomePage() {
           />
         </div>
         <div className="mt-2 flex justify-between text-[10px] text-muted-foreground">
-          <span>0</span><span>25</span><span>70</span><span>90</span><span>100</span>
+          <span>0</span>
+          <span>25</span>
+          <span>70</span>
+          <span>90</span>
+          <span>100</span>
         </div>
         {!hasAgent && (
           <p className="mt-3 text-xs text-muted-foreground">
@@ -210,16 +229,18 @@ function HomePage() {
       {/* ── Recent activity ──────────────────────────────── */}
       <section className="mt-5">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-medium text-foreground">Recent activity</h2>
+          <h2 className="text-sm font-medium text-foreground">Pulse</h2>
           <Link
             to="/activity"
             className="text-xs text-muted-foreground inline-flex items-center gap-1"
           >
-            See all <ArrowUpRight className="size-3" />
+            Activity <ArrowUpRight className="size-3" />
           </Link>
         </div>
-        <p className="text-xs text-muted-foreground text-center py-6">
-          Transaction history will appear here once your agent is active.
+        <p className="text-xs text-muted-foreground text-center py-6 leading-relaxed">
+          {hasAgent
+            ? "Agent decision trail and Solana txs live on Activity. Chat with your agent from Launch → Your active agent."
+            : "Launch your agent first. Then Activity shows tool runs, approvals, and on-chain txs together."}
         </p>
       </section>
     </AppPage>
@@ -227,6 +248,7 @@ function HomePage() {
 }
 
 // ── Sub-components ─────────────────────────────────────────────
+
 function KyaBadge({ score, tier }: { score: number; tier: AgentIdentity["tier"] }) {
   const colors = {
     gold: "bg-amber-500/10 text-amber-500 border-amber-500/20",
@@ -236,7 +258,9 @@ function KyaBadge({ score, tier }: { score: number; tier: AgentIdentity["tier"] 
   };
 
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${colors[tier]}`}>
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${colors[tier]}`}
+    >
       <Sparkles className="size-3" />
       {tier.toUpperCase()} {score}
     </span>
@@ -245,11 +269,13 @@ function KyaBadge({ score, tier }: { score: number; tier: AgentIdentity["tier"] 
 
 function QuickAction({
   to,
+  search,
   icon,
   label,
   accent,
 }: {
   to: string;
+  search?: { tab?: "active" | "new" };
   icon: React.ReactNode;
   label: string;
   accent?: boolean;
@@ -257,13 +283,12 @@ function QuickAction({
   return (
     <Link
       to={to}
+      {...(search ? { search } : {})}
       className="rounded-2xl bg-card p-3 flex flex-row items-center justify-center gap-2 border border-border min-w-0"
     >
       <span
         className={`size-8 shrink-0 rounded-full flex items-center justify-center ${
-          accent
-            ? "bg-accent text-accent-foreground"
-            : "bg-secondary text-foreground"
+          accent ? "bg-accent text-accent-foreground" : "bg-secondary text-foreground"
         }`}
       >
         {icon}

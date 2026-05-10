@@ -26,7 +26,7 @@ export function AppPage({
         </div>
         {right ? <div className="shrink-0">{right}</div> : null}
       </header>
-      <main className="flex-1 px-5 pb-32">{children}</main>
+      <main className="flex-1 min-h-0 flex flex-col px-5 pb-32">{children}</main>
     </>
   );
 }

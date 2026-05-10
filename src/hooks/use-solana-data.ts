@@ -104,7 +104,7 @@ export interface WalletBalances {
 }
 
 // ── Tier from score ───────────────────────────────────────────────────
-function getTier(score: number): AgentIdentity["tier"] {
+export function getTier(score: number): AgentIdentity["tier"] {
   if (score >= 90) return "gold";
   if (score >= 70) return "green";
   if (score >= 25) return "yellow";

@@ -20,10 +20,11 @@ function AppShellLayout() {
   }, []);
 
   const pageEase = [0.22, 1, 0.36, 1] as const;
-  const pageTransition = reduceMotion ? { duration: 0.15 } : { duration: 0.38, ease: pageEase };
+  const pageTransition = reduceMotion ? { duration: 0.14 } : { duration: 0.28, ease: pageEase };
 
   const skipEnter = isFirstPaint.current || reduceMotion;
 
+  /** Opacity-only: Y/scale + shared layout elsewhere caused visible hitching (e.g. /fund vs tab indicator). */
   return (
     <WalletGate>
       <ShellChrome>
@@ -32,9 +33,9 @@ function AppShellLayout() {
         */}
         <motion.div
           key={pathname}
-          className="flex flex-col flex-1"
-          initial={skipEnter ? false : { opacity: 0, y: 16, scale: 0.985 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
+          className="flex flex-col flex-1 min-h-0"
+          initial={skipEnter ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={pageTransition}
         >
           <Outlet />

@@ -1,331 +1,206 @@
 "use client";
 
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Bot, Loader2, Sparkles } from "lucide-react";
+import { LayoutGroup } from "framer-motion";
 import { AppPage } from "@/components/app-page";
-import {
-  CommonAgentRulesForm,
-  defaultCommonRules,
-  defaultSpecificForStrategy,
-  StrategySpecificRulesForm,
-  type CommonAgentRules,
-} from "@/components/strategy/agent-rules-forms";
-import { ProtocolTile } from "@/components/strategy/protocol-tile";
-import { StrategyPickerCard } from "@/components/strategy/strategy-picker-card";
+import { AgentAskPanel } from "@/components/agent-ask-panel";
+import { LaunchNewAgentWizard } from "@/components/launch-new-agent-wizard";
+import { TabPillBg } from "@/components/tab-pill-bg";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { AGENT_STRATEGIES, getStrategy, isStrategyId, type StrategyId } from "@/data/agent-strategies";
-import {
-  fullOishiHandle,
-  normalizeHandlePrefix,
-  validateHandlePrefix,
-} from "@/lib/oishi-handle";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { isStrategyId, type StrategyId } from "@/data/agent-strategies";
+import type { AgentIdentity } from "@/hooks/use-solana-data";
+import { useUiAgent } from "@/hooks/use-ui-agent";
 
-type LaunchSearch = { strategy?: StrategyId };
-
-const STEP_LABELS = ["Identity", "Strategy", "Rules"] as const;
+type LaunchSearch = { strategy?: StrategyId; tab?: "active" | "new" };
 
 export const Route = createFileRoute("/_app/launch")({
   validateSearch: (raw: Record<string, unknown>): LaunchSearch => {
+    const out: LaunchSearch = {};
     const s = raw.strategy;
-    if (typeof s === "string" && isStrategyId(s)) return { strategy: s };
-    return {};
+    if (typeof s === "string" && isStrategyId(s)) out.strategy = s;
+    const t = raw.tab;
+    if (t === "active" || t === "new") out.tab = t;
+    return out;
   },
   head: () => ({
     meta: [
-      { title: "Launch agent — Oishi" },
+      { title: "Agent — Oishi" },
       {
         name: "description",
-        content: "Name your agent, claim a .oishi handle, pick a strategy, and set vault rules.",
+        content: "Chat with your agent or launch a new one with a strategy and vault rules.",
       },
     ],
   }),
   component: LaunchPage,
 });
 
-function launchStepSubtitle(step: number): string {
-  return `Step ${step + 1} of 3 · ${STEP_LABELS[step]}`;
-}
-
 function LaunchPage() {
-  const { strategy: presetStrategy } = Route.useSearch();
+  const search = Route.useSearch();
   const navigate = useNavigate();
+  const { uiAgent, hasAgent, isLoading, connected, backendAgent } = useUiAgent();
+  const backendAgentId = backendAgent?.id ?? null;
 
-  const [step, setStep] = useState(0);
-  const [displayName, setDisplayName] = useState("");
-  const [handlePrefix, setHandlePrefix] = useState("");
-  const [handleTouched, setHandleTouched] = useState(false);
-  const [selectedStrategyId, setSelectedStrategyId] = useState<StrategyId | null>(null);
-  const [common, setCommon] = useState<CommonAgentRules>(defaultCommonRules);
-  const [specific, setSpecific] = useState<Record<string, number | boolean>>({});
+  const tab: "active" | "new" =
+    search.tab === "active" || search.tab === "new" ? search.tab : hasAgent ? "active" : "new";
 
-  const normalizedPrefix = useMemo(() => normalizeHandlePrefix(handlePrefix), [handlePrefix]);
-  const handleError = handleTouched ? validateHandlePrefix(normalizedPrefix) : null;
-  const displayTrimmed = displayName.trim();
-  const displayError =
-    displayTrimmed.length === 0
-      ? "Add a display name."
-      : displayTrimmed.length > 48
-        ? "Shorten to 48 characters or fewer."
-        : null;
-
-  useEffect(() => {
-    if (presetStrategy && isStrategyId(presetStrategy)) {
-      setSelectedStrategyId(presetStrategy);
-    }
-  }, [presetStrategy]);
-
-  useEffect(() => {
-    if (!selectedStrategyId) {
-      setSpecific({});
-      return;
-    }
-    setSpecific(defaultSpecificForStrategy(selectedStrategyId));
-  }, [selectedStrategyId]);
-
-  const canProceedIdentity =
-    !displayError &&
-    handleTouched &&
-    normalizedPrefix.length > 0 &&
-    validateHandlePrefix(normalizedPrefix) === null;
-
-  const canProceedStrategy = selectedStrategyId !== null;
-
-  const goBack = () => {
-    if (step > 0) {
-      setStep((s) => s - 1);
-      return;
-    }
-    navigate({ to: "/" });
+  const setTab = (next: "active" | "new") => {
+    navigate({
+      to: "/launch",
+      search: {
+        strategy: search.strategy,
+        tab: next,
+      },
+    });
   };
-
-  const resetWizard = () => {
-    setStep(0);
-    setDisplayName("");
-    setHandlePrefix("");
-    setHandleTouched(false);
-    setSelectedStrategyId(null);
-    setCommon(defaultCommonRules);
-    setSpecific({});
-    navigate({ to: "/launch", search: {} });
-  };
-
-  if (step === 0) {
-    return (
-      <AppPage title="Launch agent" subtitle={launchStepSubtitle(0)} right={null}>
-        <button
-          type="button"
-          onClick={goBack}
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground -mt-1 mb-4"
-        >
-          <ArrowLeft className="size-4" strokeWidth={2.2} />
-          Back
-        </button>
-
-        <p className="-mt-2 mb-5 text-sm text-muted-foreground leading-relaxed">
-          Register an on-chain identity for your agent. The handle is how humans and other agents
-          recognize it across Oishi.
-        </p>
-
-        <div className="rounded-2xl border border-border bg-card p-5 space-y-5">
-          <div className="space-y-2">
-            <Label htmlFor="agent-display-name">Display name</Label>
-            <Input
-              id="agent-display-name"
-              placeholder="e.g. DCA Moonbot"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              autoComplete="off"
-              className="rounded-xl h-11"
-            />
-            {displayError ? <p className="text-xs text-destructive">{displayError}</p> : null}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="agent-handle">Claim handle</Label>
-            <div className="flex rounded-xl border border-input overflow-hidden bg-background shadow-sm focus-within:ring-1 focus-within:ring-ring">
-              <span className="flex items-center pl-3 pr-1 text-muted-foreground text-sm select-none">
-                @
-              </span>
-              <Input
-                id="agent-handle"
-                className="border-0 rounded-none shadow-none focus-visible:ring-0 h-11 flex-1 min-w-0"
-                placeholder="your-agent"
-                value={handlePrefix}
-                onChange={(e) => {
-                  setHandlePrefix(e.target.value);
-                  setHandleTouched(true);
-                }}
-                onBlur={() => setHandleTouched(true)}
-                autoComplete="off"
-                spellCheck={false}
-              />
-              <span className="flex items-center pr-3 pl-1 text-muted-foreground text-sm tabular shrink-0">
-                .oishi
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Live preview:{" "}
-              <span className="font-mono text-foreground">{fullOishiHandle(normalizedPrefix || "…")}</span>
-            </p>
-            {handleTouched && (handleError || normalizedPrefix.length === 0) ? (
-              <p className="text-xs text-destructive">
-                {normalizedPrefix.length === 0 ? "Choose a handle prefix." : handleError}
-              </p>
-            ) : null}
-          </div>
-
-          <p className="text-xs text-muted-foreground rounded-xl bg-muted/40 border border-border/60 px-3 py-2">
-            <span className="font-medium text-foreground">Demo fee:</span> ~0.003 SOL for KYA-style
-            registration (not charged in this prototype).
-          </p>
-        </div>
-
-        <div className="mt-6 flex flex-col gap-3">
-          <Button
-            variant="accent"
-            className="w-full rounded-full h-12 text-base"
-            disabled={!canProceedIdentity}
-            onClick={() => setStep(1)}
-          >
-            Continue to strategy
-          </Button>
-          <p className="text-xs text-muted-foreground text-center">
-            Browsing first?{" "}
-            <Link to="/marketplace" className="text-accent-foreground font-medium underline underline-offset-4">
-              Strategy marketplace
-            </Link>
-          </p>
-        </div>
-      </AppPage>
-    );
-  }
-
-  if (step === 1) {
-    return (
-      <AppPage title="Choose strategy" subtitle={launchStepSubtitle(1)} right={null}>
-        <button
-          type="button"
-          onClick={() => setStep(0)}
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground -mt-1 mb-4"
-        >
-          <ArrowLeft className="size-4" strokeWidth={2.2} />
-          Identity
-        </button>
-
-        <div className="rounded-xl border border-border bg-muted/30 px-3 py-2 mb-4 text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">{displayTrimmed}</span>
-          <span className="mx-1.5">·</span>
-          <span className="font-mono text-foreground">{fullOishiHandle(normalizedPrefix)}</span>
-        </div>
-
-        <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-          Tap a protocol playbook. You&apos;ll tune vault limits and strategy-specific guardrails next.
-        </p>
-
-        <div className="grid grid-cols-1 gap-3">
-          {AGENT_STRATEGIES.map((s) => (
-            <StrategyPickerCard
-              key={s.id}
-              strategy={s}
-              mode="wizard"
-              selected={selectedStrategyId === s.id}
-              onSelect={() => setSelectedStrategyId(s.id)}
-            />
-          ))}
-        </div>
-
-        <div className="mt-6 flex flex-col gap-3">
-          <Button
-            variant="accent"
-            className="w-full rounded-full h-12 text-base"
-            disabled={!canProceedStrategy}
-            onClick={() => setStep(2)}
-          >
-            Continue to rules
-          </Button>
-        </div>
-      </AppPage>
-    );
-  }
-
-  // step === 2 — rules
-  const s = selectedStrategyId ? getStrategy(selectedStrategyId) : undefined;
-  if (!s) {
-    return (
-      <AppPage title="Launch agent" subtitle="Something went wrong" right={null}>
-        <Button type="button" variant="outline" className="rounded-full" onClick={() => setStep(1)}>
-          Back to strategy
-        </Button>
-      </AppPage>
-    );
-  }
-
-  const strategy = s;
 
   return (
-    <AppPage title="Set rules" subtitle={launchStepSubtitle(2)} right={null}>
-      <button
-        type="button"
-        onClick={() => setStep(1)}
-        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground -mt-1 mb-4"
-      >
-        <ArrowLeft className="size-4" strokeWidth={2.2} />
-        Strategy
-      </button>
+    <AppPage title="Agent" subtitle="Manage your deployment" right={null}>
+      <div className="flex min-h-0 flex-1 flex-col">
+        <LayoutGroup id="launch-tabs">
+          <Tabs
+            value={tab}
+            onValueChange={(v) => setTab(v as "active" | "new")}
+            className="flex min-h-0 flex-1 flex-col"
+          >
+            <TabsList className="w-full grid h-auto grid-cols-2 gap-1 rounded-xl p-1 relative">
+              <TabsTrigger
+                value="active"
+                className="relative z-10 rounded-lg py-2.5 text-xs sm:text-sm overflow-hidden data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              >
+                <TabPillBg
+                  show={tab === "active"}
+                  layoutId="launch-seg-pill"
+                  className="rounded-lg"
+                />
+                <span className="relative z-10">Your active agent</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="new"
+                className="relative z-10 rounded-lg py-2.5 text-xs sm:text-sm overflow-hidden data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              >
+                <TabPillBg show={tab === "new"} layoutId="launch-seg-pill" className="rounded-lg" />
+                <span className="relative z-10">Launch new agent</span>
+              </TabsTrigger>
+            </TabsList>
 
-      <div className="rounded-xl border border-border bg-muted/30 px-3 py-2 mb-4 space-y-1">
-        <div className="text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">{displayTrimmed}</span>
-          <span className="mx-1.5">·</span>
-          <span className="font-mono text-foreground">{fullOishiHandle(normalizedPrefix)}</span>
-        </div>
-      </div>
+            <TabsContent
+              value="active"
+              className="mt-6 flex min-h-0 flex-1 flex-col outline-none data-[state=inactive]:hidden"
+            >
+              <ActiveAgentTab
+                connected={!!connected}
+                isLoading={isLoading}
+                uiAgent={uiAgent}
+                hasAgent={hasAgent}
+                backendAgentId={backendAgentId}
+                onGoLaunchNew={() => setTab("new")}
+              />
+            </TabsContent>
 
-      <div className="rounded-2xl border border-border bg-muted/20 p-4 flex gap-3 items-start mb-5">
-        <ProtocolTile strategy={strategy} size="lg" />
-        <div className="min-w-0">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">{strategy.protocol}</p>
-          <p className="font-medium text-foreground">{strategy.name}</p>
-          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{strategy.tagline}</p>
-        </div>
-      </div>
-
-      <CommonAgentRulesForm value={common} onChange={setCommon} className="mb-4" />
-      <StrategySpecificRulesForm
-        strategyId={strategy.id}
-        value={specific}
-        onChange={setSpecific}
-      />
-
-      <div className="mt-6 flex flex-col gap-3">
-        <Button
-          variant="accent"
-          className="w-full rounded-full h-12 text-base"
-          onClick={() => {
-            const payload = {
-              displayName: displayTrimmed,
-              handle: fullOishiHandle(normalizedPrefix),
-              strategyId: strategy.id,
-              common,
-              specific,
-            };
-            console.log("oishi.agent.launch", payload);
-            navigate({ to: "/" });
-          }}
-        >
-          Launch agent
-        </Button>
-        <Button type="button" variant="outline" className="w-full rounded-full" onClick={resetWizard}>
-          Start over
-        </Button>
-        <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
-          Prototype: nothing is written on-chain. Check the console for{" "}
-          <span className="font-mono">oishi.agent.launch</span>.
-        </p>
+            <TabsContent value="new" className="mt-6 outline-none">
+              <LaunchNewAgentWizard presetStrategy={search.strategy} />
+            </TabsContent>
+          </Tabs>
+        </LayoutGroup>
       </div>
     </AppPage>
+  );
+}
+
+function KyaMiniBadge({ score, tier }: { score: number; tier: AgentIdentity["tier"] }) {
+  const colors = {
+    gold: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+    green: "bg-green-500/10 text-green-500 border-green-500/20",
+    yellow: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+    red: "bg-red-500/10 text-red-500 border-red-500/20",
+  };
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${colors[tier]}`}
+    >
+      <Sparkles className="size-3" />
+      {tier.toUpperCase()} {score}
+    </span>
+  );
+}
+
+function ActiveAgentTab({
+  connected,
+  isLoading,
+  uiAgent,
+  hasAgent,
+  backendAgentId,
+  onGoLaunchNew,
+}: {
+  connected: boolean;
+  isLoading: boolean;
+  uiAgent: AgentIdentity | null;
+  hasAgent: boolean;
+  backendAgentId: string | null;
+  onGoLaunchNew: () => void;
+}) {
+  if (!connected) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Connect your Solana wallet to view and chat with your agent.
+      </p>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+        <Loader2 className="size-8 animate-spin" aria-hidden />
+        <p className="text-sm">Loading agent…</p>
+      </div>
+    );
+  }
+
+  if (!hasAgent || !uiAgent) {
+    return (
+      <div className="rounded-2xl border border-border bg-card p-8 text-center space-y-4">
+        <div className="mx-auto size-14 rounded-full bg-secondary flex items-center justify-center">
+          <Bot className="size-7 text-muted-foreground" />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-foreground">No agent yet</p>
+          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+            Launch your first agent to unlock chat, guardrails, and on-chain reputation.
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="accent"
+          className="w-full rounded-full h-11"
+          onClick={onGoLaunchNew}
+        >
+          Launch new agent
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <div className="rounded-2xl border border-border bg-card p-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="size-2 shrink-0 rounded-full bg-accent animate-pulse" />
+          <div className="min-w-0">
+            <p className="text-sm font-medium truncate">{uiAgent.displayName || uiAgent.handle}</p>
+            <p className="text-xs text-muted-foreground font-mono truncate">{uiAgent.handle}</p>
+          </div>
+        </div>
+        <KyaMiniBadge score={uiAgent.reputationScore} tier={uiAgent.tier} />
+      </div>
+
+      <AgentAskPanel
+        agent={uiAgent}
+        backendAgentId={backendAgentId}
+        className="min-h-[min(70svh,calc(100svh-15rem))]"
+      />
+    </div>
   );
 }

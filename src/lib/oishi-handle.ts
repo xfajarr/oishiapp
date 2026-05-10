@@ -18,5 +18,5 @@ export function validateHandlePrefix(prefix: string): string | null {
 }
 
 export function fullOishiHandle(prefix: string): string {
-  return `${prefix}.oishi`;
+  return `@${prefix}.oishi`;
 }

@@ -1,4 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { arbitrum, base, mainnet } from "wagmi/chains";
@@ -21,13 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import {
-  getLifiQuote,
-  getTokenAddress,
-  toWei,
-  DECIMALS,
-  type LifiQuoteResult,
-} from "@/lib/lifi";
+import { getLifiQuote, getTokenAddress, toWei, DECIMALS, type LifiQuoteResult } from "@/lib/lifi";
 import { ArrowRight, Check, ChevronRight, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
@@ -105,6 +101,11 @@ function useDebounce<T>(value: T, delay: number): T {
 
 function FundPage() {
   const navigate = useNavigate();
+
+  /** Where bridged USDC lands — Li.F.I requires a Solana pubkey, never an EVM 0x address. */
+  const { publicKey: solPublicKey, connected: solConnected } = useWallet();
+  const solanaToAddress = solConnected && solPublicKey ? solPublicKey.toBase58() : null;
+
   const [amount, setAmount] = useState("500");
   const [chainId, setChainId] = useState<ChainId>("arbitrum");
   const [tokenId, setTokenId] = useState<TokenId>("eth");
@@ -159,6 +160,13 @@ function FundPage() {
       return;
     }
 
+    if (!solanaToAddress) {
+      setLifiQuote(null);
+      setQuoteError(null);
+      setQuoteLoading(false);
+      return;
+    }
+
     // Cancel previous request
     abortRef.current?.abort();
     const controller = new AbortController();
@@ -179,6 +187,7 @@ function FundPage() {
         toToken: "",
         fromAmount: weiAmount,
         fromAddress: evmAddress ?? "",
+        toAddress: solanaToAddress,
       });
 
       if (!controller.signal.aborted) {
@@ -196,7 +205,7 @@ function FundPage() {
         setQuoteLoading(false);
       }
     }
-  }, [debouncedAmount, chainId, tokenId, tokenMeta.label, evmAddress]);
+  }, [debouncedAmount, chainId, tokenId, tokenMeta.label, evmAddress, solanaToAddress]);
 
   useEffect(() => {
     if (phase === "idle") {
@@ -208,12 +217,16 @@ function FundPage() {
   // ── Derived quote data ──────────────────────────────────────────────
   const sendSymbol = tokenMeta.label;
   const sendAmount = lifiQuote
-    ? Number(lifiQuote.route.fromAmount) / 10 ** (DECIMALS[sendSymbol] ?? 18)
+    ? Number(
+        lifiQuote.route.fromAmount ??
+          lifiQuote.route.steps[0]?.action?.fromAmount ??
+          lifiQuote.route.steps[0]?.estimate?.fromAmount ??
+          "0",
+      ) /
+      10 ** (DECIMALS[sendSymbol] ?? 18)
     : 0;
   const receiveLabel = lifiQuote?.receiveToken ?? "USDC";
-  const receiveFormatted = lifiQuote
-    ? Number(lifiQuote.receiveAmount) / 10 ** 6
-    : receiveUsdc;
+  const receiveFormatted = lifiQuote ? Number(lifiQuote.receiveAmount) / 10 ** 6 : receiveUsdc;
   const totalFeeUsd = lifiQuote ? lifiQuote.feeUsd + lifiQuote.gasUsd : null;
   const etaSec = lifiQuote?.etaSec ?? null;
   const routeSteps = lifiQuote?.steps ?? null;
@@ -298,11 +311,7 @@ function FundPage() {
     ? `${receiveFormatted.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${receiveLabel}`
     : "—";
 
-  const quoteFeeText = lifiQuote
-    ? `~$${totalFeeUsd!.toFixed(2)}`
-    : quoteLoading
-      ? "—"
-      : "—";
+  const quoteFeeText = lifiQuote ? `~$${totalFeeUsd!.toFixed(2)}` : quoteLoading ? "—" : "—";
 
   const quoteEtaText = lifiQuote
     ? etaSec! < 60
@@ -349,6 +358,36 @@ function FundPage() {
             </button>
           ))}
         </div>
+
+        <div className="mt-8 pt-6 border-t border-border">
+          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            Receive wallet (Solana)
+          </p>
+          <p className="text-xs text-muted-foreground mt-1.5">
+            LI.FI needs this address for the Solana side of the route. Use the same wallet you use
+            in Oishi.
+          </p>
+          <div className="mt-3 flex flex-col gap-2">
+            <div
+              className={
+                "w-full flex justify-stretch [&_.wallet-adapter-button-trigger]:!w-full [&_.wallet-adapter-button-trigger]:!justify-center [&_.wallet-adapter-button-trigger]:!rounded-2xl " +
+                "[&_.wallet-adapter-button-trigger]:!bg-secondary [&_.wallet-adapter-button-trigger]:!text-foreground [&_.wallet-adapter-button-trigger]:border [&_.wallet-adapter-button-trigger]:border-border " +
+                "[&_.wallet-adapter-button-trigger]:hover:!bg-secondary/80"
+              }
+            >
+              <WalletMultiButton />
+            </div>
+            {solanaToAddress ? (
+              <p className="text-xs font-mono text-muted-foreground text-center truncate px-1">
+                {solanaToAddress.slice(0, 5)}…{solanaToAddress.slice(-5)}
+              </p>
+            ) : (
+              <p className="text-xs text-amber-600 dark:text-amber-500 text-center">
+                Connect Solana to load a quote — EVM wallets cannot receive on Solana.
+              </p>
+            )}
+          </div>
+        </div>
       </section>
 
       {/* ── Source + Route ───────────────────────────────────────── */}
@@ -385,7 +424,11 @@ function FundPage() {
               <div className="space-y-2">
                 <button
                   type="button"
-                  onClick={() => connect({ connector: connectors.find((c) => c.id === "injected") ?? connectors[0] })}
+                  onClick={() =>
+                    connect({
+                      connector: connectors.find((c) => c.id === "injected") ?? connectors[0],
+                    })
+                  }
                   className="w-full rounded-2xl border border-border bg-secondary px-4 py-3 text-sm font-medium flex items-center justify-center gap-2 hover:bg-secondary/80 transition-colors"
                 >
                   <IconEthereum className="size-4" />
@@ -394,7 +437,9 @@ function FundPage() {
                 {connectors.some((c) => c.id === "walletConnect") && (
                   <button
                     type="button"
-                    onClick={() => connect({ connector: connectors.find((c) => c.id === "walletConnect")! })}
+                    onClick={() =>
+                      connect({ connector: connectors.find((c) => c.id === "walletConnect")! })
+                    }
                     className="w-full rounded-2xl border border-border bg-secondary px-4 py-3 text-sm font-medium flex items-center justify-center gap-2 hover:bg-secondary/80 transition-colors"
                   >
                     <img src="/images/walletconnect.svg" alt="WalletConnect" className="size-4" />
@@ -488,7 +533,12 @@ function FundPage() {
               sub={tokenMeta.label}
             />
             <FlowArrow />
-            <RouteLeg icon={<IconLifi className="size-7" />} label="LI.FI" sub={quoteStepText} compact />
+            <RouteLeg
+              icon={<IconLifi className="size-7" />}
+              label="LI.FI"
+              sub={quoteStepText}
+              compact
+            />
             <FlowArrow />
             <RouteLeg
               highlight
@@ -510,9 +560,7 @@ function FundPage() {
           <div className="flex items-start gap-3 rounded-2xl bg-destructive/10 border border-destructive/30 px-4 py-3">
             <AlertTriangle className="size-4 shrink-0 text-destructive mt-0.5" />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-destructive">
-                Could not load bridge quote
-              </p>
+              <p className="text-sm font-medium text-destructive">Could not load bridge quote</p>
               <p className="text-xs text-destructive/80 mt-0.5 line-clamp-2">{quoteError}</p>
             </div>
             <button
@@ -527,24 +575,18 @@ function FundPage() {
 
         {/* ── Quote details ──────────────────────────────────────── */}
         <ul className="space-y-2 text-sm pt-1">
-          <Row
-            k="You send"
-            v={quoteSendText}
-            bold
-            loading={quoteLoading}
-          />
+          <Row k="You send" v={quoteSendText} bold loading={quoteLoading} />
           <Row k="Estimated time" v={quoteEtaText} loading={quoteLoading} />
           <Row k="Network + bridge fee" v={quoteFeeText} loading={quoteLoading} />
-          <Row
-            k="You receive"
-            v={quoteReceiveText}
-            bold
-            loading={quoteLoading}
-          />
+          <Row k="You receive" v={quoteReceiveText} bold loading={quoteLoading} />
           {lifiQuote && (
             <Row
               k="Provider"
-              v={lifiQuote.route.steps[0]?.toolDetails.name ?? "LI.FI"}
+              v={
+                lifiQuote.route.steps[0]?.toolDetails?.name ??
+                lifiQuote.route.steps[0]?.tool ??
+                "LI.F.I"
+              }
             />
           )}
         </ul>
@@ -613,7 +655,10 @@ function FundPage() {
         <button
           type="button"
           disabled={
-            !receiveUsdc || (phase !== "idle" && phase !== "quoting") || (!lifiQuote && !quoteLoading)
+            !receiveUsdc ||
+            !solanaToAddress ||
+            (phase !== "idle" && phase !== "quoting") ||
+            (!lifiQuote && !quoteLoading)
           }
           onClick={() => (phase === "idle" ? startBridge() : undefined)}
           className="mt-6 w-full rounded-full bg-ink text-ink-foreground py-4 font-medium inline-flex items-center justify-center gap-2 disabled:opacity-60 disabled:pointer-events-none"
@@ -644,9 +689,8 @@ function FundPage() {
 
       {/* ── LI.FI attribution ────────────────────────────────────── */}
       <p className="mt-4 text-center text-[10px] text-muted-foreground">
-        Routes powered by{" "}
-        <span className="font-medium text-foreground/70">LI.FI</span>{" "}
-        · Quotes are real-time · Bridge execution simulated in demo
+        Routes powered by <span className="font-medium text-foreground/70">LI.FI</span> · Quotes are
+        real-time · Bridge execution simulated in demo
       </p>
     </AppPage>
   );
@@ -742,17 +786,7 @@ function RouteLeg({
   );
 }
 
-function Row({
-  k,
-  v,
-  bold,
-  loading,
-}: {
-  k: string;
-  v: string;
-  bold?: boolean;
-  loading?: boolean;
-}) {
+function Row({ k, v, bold, loading }: { k: string; v: string; bold?: boolean; loading?: boolean }) {
   return (
     <li className="flex items-center justify-between gap-3">
       <span className="text-muted-foreground">{k}</span>

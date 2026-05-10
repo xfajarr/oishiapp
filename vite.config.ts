@@ -18,4 +18,13 @@ export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
   },
+  /** Stabilize pre-bundling for deps added after first dev run; fix 504 Outdated Optimize Dep + SSR resolution. */
+  vite: {
+    optimizeDeps: {
+      include: ["react-markdown", "remark-breaks", "bs58"],
+    },
+    ssr: {
+      noExternal: ["react-markdown", "remark-breaks", "bs58"],
+    },
+  },
 });
