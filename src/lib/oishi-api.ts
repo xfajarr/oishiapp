@@ -4,53 +4,107 @@
  */
 import bs58 from "bs58";
 
-const API_BASE = import.meta.env.VITE_OISHI_API_URL ?? "http://localhost:3001";
-const API = `${API_BASE}/api`;
-
 const TOKEN_KEY = "oishi_session_token";
+
+/** Avoid `https://host//api/...` when env has trailing slash (breaks proxies + preflight/CORS). */
+function stripTrailingSlashes(base: string): string {
+  return base.trim().replace(/\/+$/, "");
+}
+
+const API_BASE = stripTrailingSlashes(
+  import.meta.env.VITE_OISHI_API_URL ?? "http://localhost:3001",
+);
+const API = `${API_BASE}/api`;
 
 // ── Types ───────────────────────────────────────────────────────────────
 export interface BackendAgent {
-  id: string; owner: string; handle: string; displayName: string;
+  id: string;
+  owner: string;
+  handle: string;
+  displayName: string;
   strategyId: string;
-  commonRules: { dailyCapUsd: number; maxPerTxUsd: number; notifyOnBlock: boolean; quietHoursEnabled: boolean };
+  commonRules: {
+    dailyCapUsd: number;
+    maxPerTxUsd: number;
+    notifyOnBlock: boolean;
+    quietHoursEnabled: boolean;
+  };
   specificRules: Record<string, number | boolean>;
   status: "active" | "paused" | "stopped" | "blocked";
-  kyaIdentityPda: string | null; kyaReputationScore: number; attestationCount: number;
-  totalEarnings: number; totalTxCount: number; cycleCount: number;
-  createdAt: number; updatedAt: number; lastActiveAt: number | null;
+  kyaIdentityPda: string | null;
+  kyaReputationScore: number;
+  attestationCount: number;
+  totalEarnings: number;
+  totalTxCount: number;
+  cycleCount: number;
+  createdAt: number;
+  updatedAt: number;
+  lastActiveAt: number | null;
 }
 
 export interface CreateAgentPayload {
-  displayName: string; handle: string; strategyId: string;
+  displayName: string;
+  handle: string;
+  strategyId: string;
   commonRules?: BackendAgent["commonRules"];
   specificRules?: Record<string, number | boolean>;
 }
 
 export interface AgentContext {
-  agentId: string; sessionId: string;
-  state: { solBalance: number; usdcBalance: number; solUsd: number; usdcUsd: number; dailySpent: number; dailyResetAt: number; lastCycleAt: number | null; positions: Record<string, unknown> };
-  memory: Record<string, unknown>; decisionCount: number; messageCount: number; updatedAt: number;
+  agentId: string;
+  sessionId: string;
+  state: {
+    solBalance: number;
+    usdcBalance: number;
+    solUsd: number;
+    usdcUsd: number;
+    dailySpent: number;
+    dailyResetAt: number;
+    lastCycleAt: number | null;
+    positions: Record<string, unknown>;
+  };
+  memory: Record<string, unknown>;
+  decisionCount: number;
+  messageCount: number;
+  updatedAt: number;
 }
 
 export interface AgentDecision {
-  id: string; action: string; params: Record<string, unknown>; reasoning: string;
-  status: "executed" | "blocked" | "error"; blockReason?: string; timestamp: number;
+  id: string;
+  action: string;
+  params: Record<string, unknown>;
+  reasoning: string;
+  status: "executed" | "blocked" | "error";
+  blockReason?: string;
+  timestamp: number;
 }
 
 export interface StrategyInfo {
-  id: string; protocol: string; name: string; risk: string; category: string; abbrev: string;
+  id: string;
+  protocol: string;
+  name: string;
+  risk: string;
+  category: string;
+  abbrev: string;
 }
 
 // ── Token management ────────────────────────────────────────────────────
 function getStoredToken(): string | null {
-  try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
 }
 function setStoredToken(token: string) {
-  try { localStorage.setItem(TOKEN_KEY, token); } catch {}
+  try {
+    localStorage.setItem(TOKEN_KEY, token);
+  } catch {}
 }
 export function clearStoredToken() {
-  try { localStorage.removeItem(TOKEN_KEY); } catch {}
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+  } catch {}
 }
 export function getSessionToken(): string | null {
   return getStoredToken();
@@ -93,7 +147,12 @@ export async function login(wallet: string): Promise<{ token: string; wallet: st
 }
 
 // ── API request helper ──────────────────────────────────────────────────
-async function apiRequest<T>(path: string, method: string, wallet?: string, body?: unknown): Promise<T> {
+async function apiRequest<T>(
+  path: string,
+  method: string,
+  wallet?: string,
+  body?: unknown,
+): Promise<T> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
 
   // 1. Try Bearer token (persistent session)
@@ -139,7 +198,10 @@ export async function fetchStrategies(): Promise<StrategyInfo[]> {
 }
 
 // ── Agent CRUD ──────────────────────────────────────────────────────────
-export async function createAgent(wallet: string, payload: CreateAgentPayload): Promise<BackendAgent> {
+export async function createAgent(
+  wallet: string,
+  payload: CreateAgentPayload,
+): Promise<BackendAgent> {
   return (await apiRequest<{ agent: BackendAgent }>("/agents", "POST", wallet, payload)).agent;
 }
 export async function listAgents(wallet: string): Promise<BackendAgent[]> {
@@ -148,14 +210,22 @@ export async function listAgents(wallet: string): Promise<BackendAgent[]> {
 export async function getAgent(wallet: string, agentId: string): Promise<BackendAgent> {
   return (await apiRequest<{ agent: BackendAgent }>(`/agents/${agentId}`, "GET", wallet)).agent;
 }
-export async function updateAgentRules(wallet: string, agentId: string, rules: { commonRules?: any; specificRules?: Record<string, number | boolean> }): Promise<BackendAgent> {
-  return (await apiRequest<{ agent: BackendAgent }>(`/agents/${agentId}/rules`, "PUT", wallet, rules)).agent;
+export async function updateAgentRules(
+  wallet: string,
+  agentId: string,
+  rules: { commonRules?: any; specificRules?: Record<string, number | boolean> },
+): Promise<BackendAgent> {
+  return (
+    await apiRequest<{ agent: BackendAgent }>(`/agents/${agentId}/rules`, "PUT", wallet, rules)
+  ).agent;
 }
 export async function pauseAgent(wallet: string, agentId: string): Promise<BackendAgent> {
-  return (await apiRequest<{ agent: BackendAgent }>(`/agents/${agentId}/pause`, "POST", wallet)).agent;
+  return (await apiRequest<{ agent: BackendAgent }>(`/agents/${agentId}/pause`, "POST", wallet))
+    .agent;
 }
 export async function resumeAgent(wallet: string, agentId: string): Promise<BackendAgent> {
-  return (await apiRequest<{ agent: BackendAgent }>(`/agents/${agentId}/resume`, "POST", wallet)).agent;
+  return (await apiRequest<{ agent: BackendAgent }>(`/agents/${agentId}/resume`, "POST", wallet))
+    .agent;
 }
 export async function stopAgent(wallet: string, agentId: string): Promise<void> {
   await apiRequest(`/agents/${agentId}`, "DELETE", wallet);
@@ -177,7 +247,11 @@ export async function runAgentCycle(wallet: string, agentId: string): Promise<un
 export async function getAgentContext(wallet: string, agentId: string): Promise<AgentContext> {
   return apiRequest(`/agents/${agentId}/context`, "GET", wallet);
 }
-export async function getAgentDecisions(wallet: string, agentId: string, limit = 20): Promise<{ decisions: AgentDecision[]; total: number }> {
+export async function getAgentDecisions(
+  wallet: string,
+  agentId: string,
+  limit = 20,
+): Promise<{ decisions: AgentDecision[]; total: number }> {
   return apiRequest(`/agents/${agentId}/decisions?limit=${limit}`, "GET", wallet);
 }
 
@@ -185,7 +259,13 @@ export async function getAgentDecisions(wallet: string, agentId: string, limit =
 export async function getRegisterAgentTx(
   wallet: string,
   agentId: string,
-): Promise<{ transaction: string; pda: string; handle: string; programId: string; estimatedFee: string }> {
+): Promise<{
+  transaction: string;
+  pda: string;
+  handle: string;
+  programId: string;
+  estimatedFee: string;
+}> {
   return apiRequest(`/onchain/register-agent/${agentId}`, "POST", wallet);
 }
 
