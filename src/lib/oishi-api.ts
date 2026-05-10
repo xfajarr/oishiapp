@@ -20,6 +20,7 @@ const API = `${API_BASE}/api`;
 export interface BackendAgent {
   id: string;
   owner: string;
+  walletPublicKey: string;
   handle: string;
   displayName: string;
   strategyId: string;

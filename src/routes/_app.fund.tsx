@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { arbitrum, base, mainnet } from "wagmi/chains";
@@ -23,8 +23,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useOishiBackend } from "@/hooks/use-oishi-backend";
+import { useSolanaTx } from "@/hooks/use-solana-tx";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getLifiQuote, getTokenAddress, toWei, DECIMALS, type LifiQuoteResult } from "@/lib/lifi";
-import { ArrowRight, Check, ChevronRight, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
+import { ArrowRight, Check, ChevronRight, Loader2, AlertTriangle, RefreshCw, CheckCircle2, Send, ExternalLink } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 export const Route = createFileRoute("/_app/fund")({
@@ -33,7 +38,7 @@ export const Route = createFileRoute("/_app/fund")({
       { title: "Fund agent — Oishi" },
       {
         name: "description",
-        content: "Bridge funds from any chain to your agent's Solana wallet via LI.FI.",
+        content: "Send SOL or bridge from EVM chains to your agent wallet via LI.FI.",
       },
     ],
   }),
@@ -89,6 +94,160 @@ function formatSendAmount(n: number, symbol: string) {
   return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
+import type { BackendAgent } from "@/lib/oishi-api";
+
+function solanaExplorerTxUrl(signature: string, rpcEndpoint: string): string {
+  const ep = rpcEndpoint.toLowerCase();
+  const enc = encodeURIComponent(signature);
+  if (ep.includes("devnet")) {
+    return `https://explorer.solana.com/tx/${enc}?cluster=devnet`;
+  }
+  if (ep.includes("testnet")) {
+    return `https://explorer.solana.com/tx/${enc}?cluster=testnet`;
+  }
+  return `https://explorer.solana.com/tx/${enc}`;
+}
+
+function solanaExplorerAddressUrl(address: string, rpcEndpoint: string): string {
+  const ep = rpcEndpoint.toLowerCase();
+  const enc = encodeURIComponent(address);
+  if (ep.includes("devnet")) {
+    return `https://explorer.solana.com/address/${enc}?cluster=devnet`;
+  }
+  if (ep.includes("testnet")) {
+    return `https://explorer.solana.com/address/${enc}?cluster=testnet`;
+  }
+  return `https://explorer.solana.com/address/${enc}`;
+}
+
+function SolDirectFundPanel({ agent }: { agent: BackendAgent }) {
+  const agentId = agent.id;
+  const { signAndSend, ready: txReady } = useSolanaTx();
+  const { api, isReady: backendReady } = useOishiBackend();
+  const { connected } = useWallet();
+  const { connection } = useConnection();
+  const queryClient = useQueryClient();
+  const [amount, setAmount] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [txSig, setTxSig] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const { data: agentBalance } = useQuery({
+    queryKey: ["oishi", "agent-balance", agentId],
+    queryFn: async () => {
+      if (!api) return null;
+      return api.getAgentBalance(agentId);
+    },
+    enabled: backendReady && !!api && !!connected,
+    staleTime: 10_000,
+  });
+
+  const handleFund = async () => {
+    if (!api || !backendReady) return;
+    const sol = parseFloat(amount);
+    if (!sol || sol < 0.001) {
+      setError("Min 0.001 SOL");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setTxSig(null);
+
+    try {
+      const { transaction } = await api.fundAgent(agentId, sol);
+      const { signature } = await signAndSend(transaction);
+      setTxSig(signature);
+      setAmount("");
+      queryClient.invalidateQueries({ queryKey: ["oishi", "agent-balance", agentId] });
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Transfer failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <section className="rounded-3xl bg-card border border-border p-6 space-y-4">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-sm font-medium">Send SOL</p>
+          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+            From your connected Solana wallet to this agent&apos;s custodial Solana wallet. Sign one
+            transfer in Phantom or Solflare.
+          </p>
+        </div>
+        {agentBalance ? (
+          <span className="text-xs text-muted-foreground tabular shrink-0">
+            {agentBalance.sol.toFixed(4)} SOL
+          </span>
+        ) : null}
+      </div>
+
+      <div className="flex justify-stretch [&_.wallet-adapter-button-trigger]:!w-full [&_.wallet-adapter-button-trigger]:!justify-center [&_.wallet-adapter-button-trigger]:!rounded-2xl [&_.wallet-adapter-button-trigger]:!bg-secondary [&_.wallet-adapter-button-trigger]:!text-foreground [&_.wallet-adapter-button-trigger]:border [&_.wallet-adapter-button-trigger]:border-border">
+        <WalletMultiButton />
+      </div>
+
+      <div className="flex gap-2">
+        <input
+          type="number"
+          inputMode="decimal"
+          placeholder="0.01"
+          value={amount}
+          onChange={(e) => {
+            setAmount(e.target.value);
+            setError(null);
+            setTxSig(null);
+          }}
+          disabled={loading}
+          className="flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring/25"
+        />
+        <span className="flex items-center text-sm text-muted-foreground font-medium">SOL</span>
+      </div>
+
+      <div className="flex gap-2 flex-wrap">
+        {["0.01", "0.05", "0.1", "0.5"].map((v) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => {
+              setAmount(v);
+              setError(null);
+            }}
+            disabled={loading}
+            className="px-3 py-1 rounded-full text-xs border border-border bg-secondary hover:bg-secondary/80 transition-colors disabled:opacity-50"
+          >
+            {v}
+          </button>
+        ))}
+      </div>
+
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      {txSig ? (
+        <a
+          href={solanaExplorerTxUrl(txSig, connection.rpcEndpoint)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs text-success hover:underline"
+        >
+          <CheckCircle2 className="size-3.5" />
+          {txSig.slice(0, 8)}… <ExternalLink className="size-3" />
+        </a>
+      ) : null}
+
+      <button
+        type="button"
+        disabled={!connected || !txReady || !amount || loading}
+        onClick={handleFund}
+        className="w-full rounded-full bg-ink text-ink-foreground py-3 text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50 transition-opacity"
+      >
+        {loading ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+        {loading ? "Sending…" : "Send SOL to agent"}
+      </button>
+    </section>
+  );
+}
+
 // ── Debounce helper ───────────────────────────────────────────────────
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -102,9 +261,34 @@ function useDebounce<T>(value: T, delay: number): T {
 function FundPage() {
   const navigate = useNavigate();
 
-  /** Where bridged USDC lands — Li.F.I requires a Solana pubkey, never an EVM 0x address. */
-  const { publicKey: solPublicKey, connected: solConnected } = useWallet();
-  const solanaToAddress = solConnected && solPublicKey ? solPublicKey.toBase58() : null;
+  const { api, isReady: backendReady } = useOishiBackend();
+  const { data: agents = [], isLoading: agentsLoading } = useQuery({
+    queryKey: ["oishi", "fund-page-agents"],
+    queryFn: async () => {
+      if (!api) return [] as BackendAgent[];
+      return api.listAgents();
+    },
+    enabled: backendReady && !!api,
+    staleTime: 10_000,
+  });
+
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!agents.length) {
+      setSelectedAgentId(null);
+      return;
+    }
+    setSelectedAgentId((prev) =>
+      prev && agents.some((a) => a.id === prev) ? prev : agents[0].id,
+    );
+  }, [agents]);
+
+  const selectedAgent = agents.find((a) => a.id === selectedAgentId) ?? null;
+  const agentDepositAddress =
+    selectedAgent?.walletPublicKey && selectedAgent.walletPublicKey.length > 0
+      ? selectedAgent.walletPublicKey
+      : null;
 
   const [amount, setAmount] = useState("500");
   const [chainId, setChainId] = useState<ChainId>("arbitrum");
@@ -160,7 +344,7 @@ function FundPage() {
       return;
     }
 
-    if (!solanaToAddress) {
+    if (!agentDepositAddress) {
       setLifiQuote(null);
       setQuoteError(null);
       setQuoteLoading(false);
@@ -187,7 +371,7 @@ function FundPage() {
         toToken: "",
         fromAmount: weiAmount,
         fromAddress: evmAddress ?? "",
-        toAddress: solanaToAddress,
+        toAddress: agentDepositAddress,
       });
 
       if (!controller.signal.aborted) {
@@ -205,7 +389,7 @@ function FundPage() {
         setQuoteLoading(false);
       }
     }
-  }, [debouncedAmount, chainId, tokenId, tokenMeta.label, evmAddress, solanaToAddress]);
+  }, [debouncedAmount, chainId, tokenId, tokenMeta.label, evmAddress, agentDepositAddress]);
 
   useEffect(() => {
     if (phase === "idle") {
@@ -321,14 +505,109 @@ function FundPage() {
 
   const quoteStepText = routeSteps ? `${routeSteps} step${routeSteps > 1 ? "s" : ""}` : "—";
 
+  const { connection } = useConnection();
+
   return (
-    <AppPage subtitle="bridge via LI.FI" title="Fund agent">
+    <AppPage subtitle="SOL or cross-chain" title="Fund agent">
       <p className="text-sm text-muted-foreground mt-1 mb-6">
-        Bridge from the chain and token you already hold. Your agent receives native USDC on Solana.
+        Pick which agent receives the deposit. Send SOL directly from Phantom, or bridge from another chain
+        with LI.FI into that agent&apos;s custodial Solana wallet.
       </p>
 
-      {/* ── Receive amount input ─────────────────────────────────── */}
-      <section className="rounded-3xl bg-card border border-border p-6">
+      {!backendReady ? (
+        <p className="text-sm text-muted-foreground text-center py-12">Connect and sign in to load your agents.</p>
+      ) : agentsLoading ? (
+        <div className="flex justify-center py-16">
+          <Loader2 className="size-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : !agents.length ? (
+        <section className="rounded-3xl bg-card border border-border p-8 text-center">
+          <p className="text-sm font-medium">No agents yet</p>
+          <p className="text-xs text-muted-foreground mt-2 mb-6 max-w-xs mx-auto leading-relaxed">
+            Launch an agent first. Deposits always go to that agent&apos;s dedicated Solana wallet.
+          </p>
+          <Link
+            to="/launch"
+            search={{ tab: "new" }}
+            className="inline-flex rounded-full bg-ink text-ink-foreground px-6 py-3 text-sm font-medium"
+          >
+            Launch an agent
+          </Link>
+        </section>
+      ) : selectedAgent ? (
+        <>
+          <section className="rounded-3xl bg-card border border-border p-5">
+            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-3">Deposit to</p>
+            {agents.length > 1 ? (
+              <Select value={selectedAgentId!} onValueChange={(id) => setSelectedAgentId(id)}>
+                <SelectTrigger className={sourceSelectTriggerClass}>
+                  <SelectValue placeholder="Choose agent" />
+                </SelectTrigger>
+                <SelectContent>
+                  {agents.map((a) => (
+                    <SelectItem key={a.id} value={a.id} className="py-3">
+                      <span className="flex flex-col gap-0.5 text-left">
+                        <span className="font-medium">{a.displayName}</span>
+                        <span className="text-[11px] text-muted-foreground font-mono">{a.handle}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div>
+                <p className="font-medium">{selectedAgent.displayName}</p>
+                <p className="text-xs text-muted-foreground font-mono mt-0.5">{selectedAgent.handle}</p>
+              </div>
+            )}
+            {agentDepositAddress ? (
+              <a
+                href={solanaExplorerAddressUrl(agentDepositAddress, connection.rpcEndpoint)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground hover:underline max-w-full"
+              >
+                <span className="truncate">
+                  {agentDepositAddress.slice(0, 10)}…{agentDepositAddress.slice(-8)}
+                </span>
+                <ExternalLink className="size-3 shrink-0" />
+              </a>
+            ) : (
+              <p className="text-xs text-amber-600 dark:text-amber-500 mt-3 leading-relaxed">
+                This agent has no custodial Solana pubkey on file yet.
+              </p>
+            )}
+          </section>
+
+          <Tabs defaultValue="sol" className="mt-4">
+            <TabsList className="flex h-11 w-full gap-1 rounded-2xl bg-muted p-1">
+              <TabsTrigger
+                value="sol"
+                className={cn(
+                  "flex min-h-0 flex-1 basis-0 items-center justify-center rounded-xl px-2 py-2",
+                  "text-center text-xs font-medium leading-tight sm:text-sm",
+                )}
+              >
+                Solana (SOL)
+              </TabsTrigger>
+              <TabsTrigger
+                value="bridge"
+                className={cn(
+                  "flex min-h-0 flex-1 basis-0 items-center justify-center rounded-xl px-2 py-2",
+                  "text-center text-xs font-medium leading-tight sm:text-sm",
+                )}
+              >
+                Cross-chain (LI.FI)
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="sol" className="mt-4 focus-visible:outline-none">
+              <SolDirectFundPanel agent={selectedAgent} />
+            </TabsContent>
+
+            <TabsContent value="bridge" className="mt-4 space-y-4 focus-visible:outline-none">
+              {/* ── Receive amount input ─────────────────────────────────── */}
+              <section className="rounded-3xl bg-card border border-border p-6">
         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
           Receive on Solana (USDC)
         </p>
@@ -361,37 +640,25 @@ function FundPage() {
 
         <div className="mt-8 pt-6 border-t border-border">
           <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            Receive wallet (Solana)
+            Credit to (agent wallet)
           </p>
-          <p className="text-xs text-muted-foreground mt-1.5">
-            LI.FI needs this address for the Solana side of the route. Use the same wallet you use
-            in Oishi.
+          <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+            LI.FI settles on this agent-owned Solana address — not your personal wallet.
           </p>
-          <div className="mt-3 flex flex-col gap-2">
-            <div
-              className={
-                "w-full flex justify-stretch [&_.wallet-adapter-button-trigger]:!w-full [&_.wallet-adapter-button-trigger]:!justify-center [&_.wallet-adapter-button-trigger]:!rounded-2xl " +
-                "[&_.wallet-adapter-button-trigger]:!bg-secondary [&_.wallet-adapter-button-trigger]:!text-foreground [&_.wallet-adapter-button-trigger]:border [&_.wallet-adapter-button-trigger]:border-border " +
-                "[&_.wallet-adapter-button-trigger]:hover:!bg-secondary/80"
-              }
-            >
-              <WalletMultiButton />
-            </div>
-            {solanaToAddress ? (
-              <p className="text-xs font-mono text-muted-foreground text-center truncate px-1">
-                {solanaToAddress.slice(0, 5)}…{solanaToAddress.slice(-5)}
-              </p>
-            ) : (
-              <p className="text-xs text-amber-600 dark:text-amber-500 text-center">
-                Connect Solana to load a quote — EVM wallets cannot receive on Solana.
-              </p>
-            )}
-          </div>
+          {agentDepositAddress ? (
+            <p className="mt-3 text-[11px] font-mono text-muted-foreground text-center break-all px-1 leading-relaxed">
+              {agentDepositAddress}
+            </p>
+          ) : (
+            <p className="text-xs text-amber-600 dark:text-amber-500 text-center mt-3">
+              Pick an agent with a valid wallet to load quotes.
+            </p>
+          )}
         </div>
       </section>
 
       {/* ── Source + Route ───────────────────────────────────────── */}
-      <section className="mt-4 rounded-3xl bg-card border border-border p-5 space-y-5">
+              <section className="rounded-3xl bg-card border border-border p-5 space-y-5">
         {/* ── EVM Wallet ────────────────────────────────────────── */}
         {interactive && (
           <div>
@@ -656,7 +923,7 @@ function FundPage() {
           type="button"
           disabled={
             !receiveUsdc ||
-            !solanaToAddress ||
+            !agentDepositAddress ||
             (phase !== "idle" && phase !== "quoting") ||
             (!lifiQuote && !quoteLoading)
           }
@@ -688,10 +955,14 @@ function FundPage() {
       )}
 
       {/* ── LI.FI attribution ────────────────────────────────────── */}
-      <p className="mt-4 text-center text-[10px] text-muted-foreground">
-        Routes powered by <span className="font-medium text-foreground/70">LI.FI</span> · Quotes are
-        real-time · Bridge execution simulated in demo
-      </p>
+              <p className="mt-4 text-center text-[10px] text-muted-foreground px-2">
+                Routes powered by <span className="font-medium text-foreground/70">LI.FI</span> · Quotes
+                update live · Bridge execution simulated in demo
+              </p>
+            </TabsContent>
+          </Tabs>
+        </>
+      ) : null}
     </AppPage>
   );
 }
