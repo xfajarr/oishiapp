@@ -25,6 +25,8 @@ import {
   getAgentSkills,
   fetchStrategies,
   getRegisterAgentTx,
+  getAgentBalance,
+  fundAgent,
 } from "@/lib/oishi-api";
 import type { CreateAgentPayload, BackendAgent } from "@/lib/oishi-api";
 
@@ -121,7 +123,10 @@ export function useOishiBackend() {
       getAgent: (agentId: string) => getAgent(wallet, agentId),
       updateAgentRules: (
         agentId: string,
-        rules: { commonRules?: BackendAgent["commonRules"]; specificRules?: Record<string, number | boolean> },
+        rules: {
+          commonRules?: BackendAgent["commonRules"];
+          specificRules?: Record<string, number | boolean>;
+        },
       ) => updateAgentRules(wallet, agentId, rules),
       pauseAgent: (agentId: string) => pauseAgent(wallet, agentId),
       resumeAgent: (agentId: string) => resumeAgent(wallet, agentId),
@@ -129,9 +134,12 @@ export function useOishiBackend() {
       runAgentCycle: (agentId: string) => runAgentCycle(wallet, agentId),
       chatWithAgent: (agentId: string, message: string) => chatWithAgent(wallet, agentId, message),
       getAgentContext: (agentId: string) => getAgentContext(wallet, agentId),
-      getAgentDecisions: (agentId: string, limit?: number) => getAgentDecisions(wallet, agentId, limit),
+      getAgentDecisions: (agentId: string, limit?: number) =>
+        getAgentDecisions(wallet, agentId, limit),
       getAgentSkills: (agentId: string) => getAgentSkills(wallet, agentId),
       getRegisterAgentTx: (agentId: string) => getRegisterAgentTx(wallet, agentId),
+      getAgentBalance: (agentId: string) => getAgentBalance(wallet, agentId),
+      fundAgent: (agentId: string, amountSol: number) => fundAgent(wallet, agentId, amountSol),
       fetchStrategies,
     };
   }, [wallet]);

@@ -3,7 +3,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Loader2, CheckCircle, AlertTriangle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import {
   CommonAgentRulesForm,
   defaultCommonRules,
@@ -30,6 +30,18 @@ const STEP_LABELS = ["Identity", "Strategy", "Rules"] as const;
 
 type LaunchPhase = "idle" | "registering" | "creating" | "onchain" | "done" | "error";
 
+function solanaExplorerTxUrl(signature: string, rpcEndpoint: string): string {
+  const ep = rpcEndpoint.toLowerCase();
+  const enc = encodeURIComponent(signature);
+  if (ep.includes("devnet")) {
+    return `https://explorer.solana.com/tx/${enc}?cluster=devnet`;
+  }
+  if (ep.includes("testnet")) {
+    return `https://explorer.solana.com/tx/${enc}?cluster=testnet`;
+  }
+  return `https://explorer.solana.com/tx/${enc}`;
+}
+
 function launchStepSubtitle(step: number): string {
   return `Step ${step + 1} of 3 · ${STEP_LABELS[step]}`;
 }
@@ -47,6 +59,7 @@ function WizardHeading({ title, subtitle }: { title: string; subtitle: string })
 
 export function LaunchNewAgentWizard({ presetStrategy }: { presetStrategy?: StrategyId }) {
   const { connected } = useWallet();
+  const { connection } = useConnection();
   const { api, isReady } = useOishiBackend();
   const { signAndSend, ready: txReady } = useSolanaTx();
   const navigate = useNavigate();
@@ -61,6 +74,8 @@ export function LaunchNewAgentWizard({ presetStrategy }: { presetStrategy?: Stra
 
   const [launchPhase, setLaunchPhase] = useState<LaunchPhase>("idle");
   const [launchError, setLaunchError] = useState<string | null>(null);
+  /** On-chain registration signature (shown on success screen) */
+  const [launchSignature, setLaunchSignature] = useState<string | null>(null);
 
   const normalizedPrefix = useMemo(() => normalizeHandlePrefix(handlePrefix), [handlePrefix]);
   const handleError = handleTouched ? validateHandlePrefix(normalizedPrefix) : null;
@@ -112,6 +127,7 @@ export function LaunchNewAgentWizard({ presetStrategy }: { presetStrategy?: Stra
     setSpecific({});
     setLaunchPhase("idle");
     setLaunchError(null);
+    setLaunchSignature(null);
     navigate({ to: "/launch", search: { tab: "new" } });
   };
 
@@ -134,6 +150,7 @@ export function LaunchNewAgentWizard({ presetStrategy }: { presetStrategy?: Stra
 
     setLaunchPhase("registering");
     setLaunchError(null);
+    setLaunchSignature(null);
 
     let createdId: string | null = null;
     try {
@@ -154,8 +171,9 @@ export function LaunchNewAgentWizard({ presetStrategy }: { presetStrategy?: Stra
       console.log("[oishi] Requesting on-chain registration tx for", created.id);
       const { transaction, pda } = await api.getRegisterAgentTx(created.id);
       console.log("[oishi] Got tx, PDA:", pda);
-      await signAndSend(transaction);
-      console.log("[oishi] On-chain tx confirmed");
+      const { signature } = await signAndSend(transaction);
+      setLaunchSignature(signature);
+      console.log("[oishi] On-chain tx confirmed", signature);
 
       setLaunchPhase("done");
       console.log("[oishi] Agent launched:", created);
@@ -455,6 +473,24 @@ export function LaunchNewAgentWizard({ presetStrategy }: { presetStrategy?: Stra
                   <CheckCircle className="size-4" />
                   Agent scheduler active
                 </div>
+                {launchSignature ? (
+                  <div className="rounded-xl border border-border bg-muted/30 px-3 py-3 text-left text-xs">
+                    <p className="text-muted-foreground font-medium uppercase tracking-wider mb-2">
+                      Transaction signature
+                    </p>
+                    <p className="font-mono text-[11px] text-foreground break-all leading-snug">
+                      {launchSignature}
+                    </p>
+                    <a
+                      href={solanaExplorerTxUrl(launchSignature, connection.rpcEndpoint)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 inline-block text-accent-foreground underline underline-offset-4 font-medium"
+                    >
+                      View on Explorer
+                    </a>
+                  </div>
+                ) : null}
               </div>
               <p className="mt-6 text-xs text-muted-foreground">Redirecting to dashboard…</p>
             </>

@@ -1,20 +1,28 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState, type ReactNode } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import {
   ArrowUpRight,
   BadgeCheck,
   Bot,
+  CheckCircle2,
   LayoutGrid,
+  Loader2,
   MessageSquare,
   Plus,
+  Send,
   Shield,
   Sparkles,
 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppPage } from "@/components/app-page";
 import { useBalances } from "@/hooks/use-solana-data";
+import { useSolanaTx } from "@/hooks/use-solana-tx";
 import { useUiAgent } from "@/hooks/use-ui-agent";
+import { useOishiBackend } from "@/hooks/use-oishi-backend";
 import { cn } from "@/lib/utils";
 import type { AgentIdentity } from "@/hooks/use-solana-data";
+import type { AgentBalance } from "@/lib/oishi-api";
 
 export const Route = createFileRoute("/_app/")({
   head: () => ({
@@ -32,10 +40,30 @@ export const Route = createFileRoute("/_app/")({
 function HomePage() {
   const { publicKey, connected } = useWallet();
   const { data: balances, isLoading: balanceLoading } = useBalances(publicKey ?? null);
-  const { uiAgent, hasAgent, isLoading: agentIdentityLoading, agent } = useUiAgent();
+  const { uiAgent, hasAgent, isLoading: agentIdentityLoading, agent, backendAgent } = useUiAgent();
+
+  const { api, isReady: backendReady } = useOishiBackend();
+  const backendAgentId = backendAgent?.id ?? null;
+
+  const { data: agentBalance } = useQuery({
+    queryKey: ["oishi", "agent-balance", backendAgentId],
+    queryFn: async () => {
+      if (!api || !backendAgentId || !publicKey) return null;
+      try {
+        return await api.getAgentBalance(backendAgentId);
+      } catch {
+        return null;
+      }
+    },
+    enabled: backendReady && !!backendAgentId && !!publicKey,
+    staleTime: 10_000,
+    refetchInterval: 30_000,
+  });
 
   const isLoading = balanceLoading || agentIdentityLoading;
-  const totalUsd = (balances?.solUsd ?? 0) + (balances?.usdcUsd ?? 0);
+  const totalUsd = agentBalance
+    ? agentBalance.solUsd
+    : (balances?.solUsd ?? 0) + (balances?.usdcUsd ?? 0);
 
   // ── No wallet connected ─────────────────────────────────
   if (!connected) {
@@ -142,8 +170,21 @@ function HomePage() {
 
         <div className="mt-5 pt-3 border-t border-ink-foreground/10 text-xs text-ink-foreground/50">
           ≈ ${totalUsd.toFixed(2)} USD
+          {agentBalance && (
+            <a
+              href={agentBalance.explorerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block mt-1 font-mono hover:underline truncate"
+            >
+              {agentBalance.wallet.slice(0, 4)}…{agentBalance.wallet.slice(-4)}
+            </a>
+          )}
         </div>
       </section>
+
+      {/* ── Fund agent ──────────────────────────────────── */}
+      {backendAgent && <FundAgentCard agentId={backendAgent.id} agentBalance={agentBalance} />}
 
       {/* ── Quick actions ────────────────────────────────── */}
       <section className={cn("mt-4 grid gap-3", uiAgent ? "grid-cols-2" : "grid-cols-3")}>
@@ -267,6 +308,117 @@ function KyaBadge({ score, tier }: { score: number; tier: AgentIdentity["tier"] 
   );
 }
 
+function FundAgentCard({
+  agentId,
+  agentBalance,
+}: {
+  agentId: string | null;
+  agentBalance: AgentBalance | null | undefined;
+}) {
+  const { signAndSend, ready: txReady } = useSolanaTx();
+  const { api, isReady: backendReady } = useOishiBackend();
+  const queryClient = useQueryClient();
+  const { publicKey } = useWallet();
+  const [amount, setAmount] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [txSig, setTxSig] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleFund = async () => {
+    if (!api || !backendReady || !agentId) return;
+    const sol = parseFloat(amount);
+    if (!sol || sol < 0.001) {
+      setError("Min 0.001 SOL");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setTxSig(null);
+
+    try {
+      const { transaction } = await api.fundAgent(agentId, sol);
+      const { signature } = await signAndSend(transaction);
+      setTxSig(signature);
+      setAmount("");
+      // Refresh balance
+      queryClient.invalidateQueries({ queryKey: ["oishi", "agent-balance", agentId] });
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Transfer failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <section className="mt-4 rounded-3xl bg-card border border-border p-5">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm font-medium">Fund agent</p>
+        {agentBalance && (
+          <span className="text-xs text-muted-foreground tabular">
+            {agentBalance.sol.toFixed(4)} SOL
+          </span>
+        )}
+      </div>
+
+      <div className="flex gap-2 mb-3">
+        <input
+          type="number"
+          inputMode="decimal"
+          placeholder="0.01"
+          value={amount}
+          onChange={(e) => {
+            setAmount(e.target.value);
+            setError(null);
+            setTxSig(null);
+          }}
+          disabled={loading}
+          className="flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring/25"
+        />
+        <span className="flex items-center text-sm text-muted-foreground font-medium">SOL</span>
+      </div>
+
+      <div className="flex gap-2 mb-4 flex-wrap">
+        {["0.01", "0.05", "0.1", "0.5"].map((v) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => {
+              setAmount(v);
+              setError(null);
+            }}
+            className="px-3 py-1 rounded-full text-xs border border-border bg-secondary hover:bg-secondary/80 transition-colors"
+          >
+            {v}
+          </button>
+        ))}
+      </div>
+
+      {error && <p className="text-xs text-destructive mb-3">{error}</p>}
+      {txSig && (
+        <a
+          href={`https://explorer.solana.com/tx/${txSig}?cluster=devnet`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 text-xs text-success mb-3 hover:underline"
+        >
+          <CheckCircle2 className="size-3.5" /> {txSig.slice(0, 8)}…
+        </a>
+      )}
+
+      <button
+        type="button"
+        disabled={!txReady || !amount || loading}
+        onClick={handleFund}
+        className="w-full rounded-full bg-ink text-ink-foreground py-3 text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50 transition-opacity"
+      >
+        {loading ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+        {loading ? "Sending…" : "Send SOL to agent"}
+      </button>
+    </section>
+  );
+}
+
 function QuickAction({
   to,
   search,
@@ -276,7 +428,7 @@ function QuickAction({
 }: {
   to: string;
   search?: { tab?: "active" | "new" };
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   accent?: boolean;
 }) {

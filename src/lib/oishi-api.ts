@@ -189,6 +189,26 @@ export async function getRegisterAgentTx(
   return apiRequest(`/onchain/register-agent/${agentId}`, "POST", wallet);
 }
 
+export interface AgentBalance {
+  agentId: string;
+  wallet: string;
+  sol: number;
+  solUsd: number;
+  explorerUrl: string;
+}
+
+export async function getAgentBalance(wallet: string, agentId: string): Promise<AgentBalance> {
+  return apiRequest(`/agents/${agentId}/balance`, "GET", wallet);
+}
+
+export async function fundAgent(
+  wallet: string,
+  agentId: string,
+  amountSol: number,
+): Promise<{ transaction: string; from: string; to: string; amountSol: number }> {
+  return apiRequest(`/onchain/fund-agent/${agentId}`, "POST", wallet, { amountSol });
+}
+
 export async function getAgentSkills(wallet: string, agentId: string): Promise<any> {
   return apiRequest(`/agents/${agentId}/skills`, "GET", wallet);
 }
