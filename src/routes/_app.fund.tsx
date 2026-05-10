@@ -18,9 +18,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Check, ChevronRight, Loader2 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import {
+  getLifiQuote,
+  getTokenAddress,
+  toWei,
+  DECIMALS,
+  type LifiQuoteResult,
+} from "@/lib/lifi";
+import { ArrowRight, Check, ChevronRight, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 export const Route = createFileRoute("/_app/fund")({
   head: () => ({
@@ -28,7 +34,7 @@ export const Route = createFileRoute("/_app/fund")({
       { title: "Fund agent — Oishi" },
       {
         name: "description",
-        content: "Bridge funds from Arbitrum to your agent's Solana wallet via LI.FI.",
+        content: "Bridge funds from any chain to your agent's Solana wallet via LI.FI.",
       },
     ],
   }),
@@ -72,9 +78,6 @@ const BRIDGE_STEPS = [
 
 type BridgePhase = "idle" | "quoting" | "bridging" | "success";
 
-const ETH_USD = 3185;
-
-/** One visual style for both source selects — avoids mixed borders / alignment */
 const sourceSelectTriggerClass =
   "h-11 w-full rounded-2xl border border-border bg-card px-3 shadow-none " +
   "focus:outline-none focus:ring-2 focus:ring-ring/25 focus:ring-offset-0";
@@ -87,6 +90,16 @@ function formatSendAmount(n: number, symbol: string) {
   return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
+// ── Debounce helper ───────────────────────────────────────────────────
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+  return debounced;
+}
+
 function FundPage() {
   const navigate = useNavigate();
   const [amount, setAmount] = useState("500");
@@ -95,8 +108,15 @@ function FundPage() {
   const [phase, setPhase] = useState<BridgePhase>("idle");
   const [progress, setProgress] = useState(0);
   const [stepIndex, setStepIndex] = useState(0);
+
+  // ── Real LI.FI quote state ────────────────────────────────────────
+  const [lifiQuote, setLifiQuote] = useState<LifiQuoteResult | null>(null);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+
   const quotingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bridgeTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const abortRef = useRef<AbortController | null>(null);
 
   const tokens = TOKENS_BY_CHAIN[chainId];
   const tokenMeta = tokens.find((t) => t.id === tokenId) ?? tokens[0];
@@ -104,43 +124,94 @@ function FundPage() {
   const ChainIcon = chainMeta.Icon;
   const TokenIcon = tokenMeta.Icon;
 
+  const receiveUsdc = Math.max(0, parseFloat(amount.replace(/,/g, "")) || 0);
+  const debouncedAmount = useDebounce(amount, 600);
+  const interactive = phase === "idle";
+
+  // ── Sync token to available tokens on chain change ──────────────────
   useEffect(() => {
     if (!tokens.some((t) => t.id === tokenId)) {
       setTokenId(tokens[0].id);
     }
   }, [chainId, tokenId, tokens]);
 
-  const receiveUsdc = Math.max(0, parseFloat(amount.replace(/,/g, "")) || 0);
-
-  const quote = useMemo(() => {
-    const feeBps = 14;
-    const mult = 1 + feeBps / 10_000;
-    let sendAmount: number;
-    let sendSymbol: string;
-    if (tokenId === "eth") {
-      sendAmount = (receiveUsdc * mult) / ETH_USD;
-      sendSymbol = "ETH";
-    } else if (tokenId === "usdc") {
-      sendAmount = receiveUsdc * mult;
-      sendSymbol = "USDC";
-    } else {
-      sendAmount = receiveUsdc * mult;
-      sendSymbol = "USDT";
+  // ── Fetch real LI.FI quote ─────────────────────────────────────────
+  const fetchQuote = useCallback(async () => {
+    const num = parseFloat(debouncedAmount.replace(/,/g, "")) || 0;
+    if (num <= 0) {
+      setLifiQuote(null);
+      setQuoteError(null);
+      return;
     }
 
-    const networkFeeUsd = chainId === "ethereum" ? 1.12 : chainId === "base" ? 0.08 : 0.21;
-    const etaSec = chainId === "ethereum" ? 48 : chainId === "base" ? 35 : 28;
+    // Cancel previous request
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
 
-    return { sendAmount, sendSymbol, networkFeeUsd, etaSec };
-  }, [receiveUsdc, chainId, tokenId]);
+    setQuoteLoading(true);
+    setQuoteError(null);
 
+    try {
+      const tokenAddr = getTokenAddress(chainId, tokenId);
+      const decimals = DECIMALS[tokenMeta.label] ?? 18;
+      const weiAmount = toWei(num, decimals);
+
+      const result = await getLifiQuote({
+        fromChain: chainId,
+        toChain: "solana",
+        fromToken: tokenAddr,
+        toToken: "",
+        fromAmount: weiAmount,
+      });
+
+      if (!controller.signal.aborted) {
+        setLifiQuote(result);
+        setQuoteError(null);
+      }
+    } catch (err: unknown) {
+      if (!controller.signal.aborted) {
+        const message = err instanceof Error ? err.message : "Failed to fetch quote";
+        setQuoteError(message);
+        setLifiQuote(null);
+      }
+    } finally {
+      if (!controller.signal.aborted) {
+        setQuoteLoading(false);
+      }
+    }
+  }, [debouncedAmount, chainId, tokenId, tokenMeta.label]);
+
+  useEffect(() => {
+    if (phase === "idle") {
+      fetchQuote();
+    }
+    return () => abortRef.current?.abort();
+  }, [fetchQuote, phase]);
+
+  // ── Derived quote data ──────────────────────────────────────────────
+  const sendSymbol = tokenMeta.label;
+  const sendAmount = lifiQuote
+    ? Number(lifiQuote.route.fromAmount) / 10 ** (DECIMALS[sendSymbol] ?? 18)
+    : 0;
+  const receiveLabel = lifiQuote?.receiveToken ?? "USDC";
+  const receiveFormatted = lifiQuote
+    ? Number(lifiQuote.receiveAmount) / 10 ** 6
+    : receiveUsdc;
+  const totalFeeUsd = lifiQuote ? lifiQuote.feeUsd + lifiQuote.gasUsd : null;
+  const etaSec = lifiQuote?.etaSec ?? null;
+  const routeSteps = lifiQuote?.steps ?? null;
+
+  // ── Cleanup timers ──────────────────────────────────────────────────
   useEffect(() => {
     return () => {
       if (quotingTimer.current) clearTimeout(quotingTimer.current);
       bridgeTimers.current.forEach(clearTimeout);
+      abortRef.current?.abort();
     };
   }, []);
 
+  // ── Bridge animation (simulated execution) ──────────────────────────
   useEffect(() => {
     bridgeTimers.current.forEach(clearTimeout);
     bridgeTimers.current = [];
@@ -173,10 +244,12 @@ function FundPage() {
     schedule(5600, () => setPhase("success"));
   }, [phase]);
 
-  const interactive = phase === "idle";
-
   function startBridge() {
     if (!receiveUsdc || phase !== "idle") return;
+    if (!lifiQuote) {
+      setQuoteError("Please wait for the quote to load before bridging");
+      return;
+    }
     setPhase("quoting");
     quotingTimer.current = setTimeout(() => {
       setPhase("bridging");
@@ -190,14 +263,46 @@ function FundPage() {
     setPhase("idle");
     setProgress(0);
     setStepIndex(0);
+    setQuoteError(null);
   }
 
+  function retryQuote() {
+    setQuoteError(null);
+    fetchQuote();
+  }
+
+  // ── Derived quote display data ──────────────────────────────────────
+  const quoteSendText = lifiQuote
+    ? `${formatSendAmount(sendAmount, sendSymbol)} ${sendSymbol}`
+    : quoteLoading
+      ? "Fetching…"
+      : "—";
+
+  const quoteReceiveText = lifiQuote
+    ? `${receiveFormatted.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${receiveLabel}`
+    : "—";
+
+  const quoteFeeText = lifiQuote
+    ? `~$${totalFeeUsd!.toFixed(2)}`
+    : quoteLoading
+      ? "—"
+      : "—";
+
+  const quoteEtaText = lifiQuote
+    ? etaSec! < 60
+      ? `~${etaSec}s`
+      : `~${Math.ceil(etaSec! / 60)}m`
+    : "—";
+
+  const quoteStepText = routeSteps ? `${routeSteps} step${routeSteps > 1 ? "s" : ""}` : "—";
+
   return (
-    <AppPage subtitle="bridge · li.fi" title="Fund agent">
+    <AppPage subtitle="bridge via LI.FI" title="Fund agent">
       <p className="text-sm text-muted-foreground mt-1 mb-6">
         Bridge from the chain and token you already hold. Your agent receives native USDC on Solana.
       </p>
 
+      {/* ── Receive amount input ─────────────────────────────────── */}
       <section className="rounded-3xl bg-card border border-border p-6">
         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
           Receive on Solana (USDC)
@@ -230,7 +335,7 @@ function FundPage() {
         </div>
       </section>
 
-      {/* Source selection + route */}
+      {/* ── Source + Route ───────────────────────────────────────── */}
       <section className="mt-4 rounded-3xl bg-card border border-border p-5 space-y-5">
         <div>
           <p className="text-sm font-medium mb-3">Source</p>
@@ -247,6 +352,7 @@ function FundPage() {
                   setChainId(c);
                   const next = TOKENS_BY_CHAIN[c][0].id;
                   setTokenId(next);
+                  setLifiQuote(null);
                 }}
               >
                 <SelectTrigger className={sourceSelectTriggerClass}>
@@ -273,7 +379,10 @@ function FundPage() {
               <Select
                 disabled={!interactive}
                 value={tokenId}
-                onValueChange={(v) => setTokenId(v as TokenId)}
+                onValueChange={(v) => {
+                  setTokenId(v as TokenId);
+                  setLifiQuote(null);
+                }}
               >
                 <SelectTrigger className={sourceSelectTriggerClass}>
                   <div className="flex min-w-0 flex-1 items-center text-left">
@@ -295,6 +404,7 @@ function FundPage() {
           </div>
         </div>
 
+        {/* ── Route visualization ────────────────────────────────── */}
         <div>
           <p className="text-sm font-medium mb-3">Route</p>
           <div className="flex items-stretch justify-between gap-1 sm:gap-2">
@@ -309,7 +419,7 @@ function FundPage() {
               sub={tokenMeta.label}
             />
             <FlowArrow />
-            <RouteLeg icon={<IconLifi className="size-7" />} label="LI.FI" sub="Bridge" compact />
+            <RouteLeg icon={<IconLifi className="size-7" />} label="LI.FI" sub={quoteStepText} compact />
             <FlowArrow />
             <RouteLeg
               highlight
@@ -321,25 +431,56 @@ function FundPage() {
                 />
               }
               label="Solana"
-              sub="USDC"
+              sub={receiveLabel}
             />
           </div>
         </div>
 
+        {/* ── Error banner ───────────────────────────────────────── */}
+        {quoteError && phase === "idle" && (
+          <div className="flex items-start gap-3 rounded-2xl bg-destructive/10 border border-destructive/30 px-4 py-3">
+            <AlertTriangle className="size-4 shrink-0 text-destructive mt-0.5" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-destructive">
+                Could not load bridge quote
+              </p>
+              <p className="text-xs text-destructive/80 mt-0.5 line-clamp-2">{quoteError}</p>
+            </div>
+            <button
+              type="button"
+              onClick={retryQuote}
+              className="shrink-0 text-destructive hover:text-destructive/80 transition-colors"
+            >
+              <RefreshCw className="size-4" />
+            </button>
+          </div>
+        )}
+
+        {/* ── Quote details ──────────────────────────────────────── */}
         <ul className="space-y-2 text-sm pt-1">
           <Row
             k="You send"
-            v={`${formatSendAmount(quote.sendAmount, quote.sendSymbol)} ${quote.sendSymbol}`}
+            v={quoteSendText}
             bold
+            loading={quoteLoading}
           />
-          <Row k="Estimated time" v={phase === "quoting" ? "Fetching…" : `~${quote.etaSec}s`} />
+          <Row k="Estimated time" v={quoteEtaText} loading={quoteLoading} />
+          <Row k="Network + bridge fee" v={quoteFeeText} loading={quoteLoading} />
           <Row
-            k="Network + bridge fee"
-            v={phase === "quoting" ? "—" : `~$${quote.networkFeeUsd.toFixed(2)}`}
+            k="You receive"
+            v={quoteReceiveText}
+            bold
+            loading={quoteLoading}
           />
-          <Row k="You receive" v={`${receiveUsdc || "0"} USDC`} bold />
+          {lifiQuote && (
+            <Row
+              k="Provider"
+              v={lifiQuote.route.steps[0]?.toolDetails.name ?? "LI.FI"}
+            />
+          )}
         </ul>
 
+        {/* ── Bridge progress ────────────────────────────────────── */}
         {(phase === "bridging" || phase === "success") && (
           <div className="pt-2 border-t border-border space-y-3" aria-live="polite">
             <div className="flex items-center justify-between gap-2">
@@ -381,6 +522,7 @@ function FundPage() {
         )}
       </section>
 
+      {/* ── Action button ────────────────────────────────────────── */}
       {phase === "success" ? (
         <div className="mt-6 space-y-3">
           <button
@@ -401,19 +543,26 @@ function FundPage() {
       ) : (
         <button
           type="button"
-          disabled={!receiveUsdc || (phase !== "idle" && phase !== "quoting")}
+          disabled={
+            !receiveUsdc || (phase !== "idle" && phase !== "quoting") || (!lifiQuote && !quoteLoading)
+          }
           onClick={() => (phase === "idle" ? startBridge() : undefined)}
           className="mt-6 w-full rounded-full bg-ink text-ink-foreground py-4 font-medium inline-flex items-center justify-center gap-2 disabled:opacity-60 disabled:pointer-events-none"
         >
           {phase === "quoting" ? (
             <>
               <Loader2 className="size-4 animate-spin" />
-              Finding best route…
+              Locking route…
             </>
           ) : phase === "bridging" ? (
             <>
               <Loader2 className="size-4 animate-spin" />
               Bridging…
+            </>
+          ) : quoteLoading ? (
+            <>
+              <Loader2 className="size-4 animate-spin" />
+              Loading quote…
             </>
           ) : (
             <>
@@ -423,10 +572,18 @@ function FundPage() {
           )}
         </button>
       )}
+
+      {/* ── LI.FI attribution ────────────────────────────────────── */}
+      <p className="mt-4 text-center text-[10px] text-muted-foreground">
+        Routes powered by{" "}
+        <span className="font-medium text-foreground/70">LI.FI</span>{" "}
+        · Quotes are real-time · Bridge execution simulated in demo
+      </p>
     </AppPage>
   );
 }
 
+// ── Sub-components ─────────────────────────────────────────────────
 function FlowArrow() {
   return (
     <div className="flex flex-col items-center justify-center shrink-0 px-0.5 text-muted-foreground self-center">
@@ -516,11 +673,29 @@ function RouteLeg({
   );
 }
 
-function Row({ k, v, bold }: { k: string; v: string; bold?: boolean }) {
+function Row({
+  k,
+  v,
+  bold,
+  loading,
+}: {
+  k: string;
+  v: string;
+  bold?: boolean;
+  loading?: boolean;
+}) {
   return (
     <li className="flex items-center justify-between gap-3">
       <span className="text-muted-foreground">{k}</span>
-      <span className={cn("tabular text-right", bold && "font-medium")}>{v}</span>
+      <span className={cn("tabular text-right", bold && "font-medium")}>
+        {loading ? (
+          <span className="inline-flex items-center gap-1 text-muted-foreground">
+            <Loader2 className="size-3 animate-spin" />
+          </span>
+        ) : (
+          v
+        )}
+      </span>
     </li>
   );
 }
