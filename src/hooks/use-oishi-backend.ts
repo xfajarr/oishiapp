@@ -27,6 +27,9 @@ import {
   getRegisterAgentTx,
   getAgentBalance,
   fundAgent,
+  payAgent,
+  registerAgentOnChain as registerAgent,
+  confirmKyaRegistration,
 } from "@/lib/oishi-api";
 import type { CreateAgentPayload, BackendAgent } from "@/lib/oishi-api";
 
