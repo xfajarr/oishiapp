@@ -149,9 +149,11 @@ export function useOishiBackend() {
       getRegisterAgentTx: (agentId: string) => getRegisterAgentTx(wallet, agentId),
       getAgentBalance: (agentId: string) => getAgentBalance(wallet, agentId),
       fundAgent: (agentId: string, amountSol: number) => fundAgent(wallet, agentId, amountSol),
-      payAgent: (agentId: string, signature: string, amountUsd: number) => payAgent(wallet, agentId, signature, amountUsd),
+      payAgent: (agentId: string, signature: string, amountUsd: number) =>
+        payAgent(wallet, agentId, signature, amountUsd),
       registerAgent: (agentId: string) => registerAgent(wallet, agentId),
-      confirmKyaRegistration: (agentId: string, payload: any) => confirmKyaRegistration(wallet, agentId, payload),
+      confirmKyaRegistration: (agentId: string, payload: any) =>
+        confirmKyaRegistration(wallet, agentId, payload),
       fetchStrategies,
     };
     _loginInProgress = false;
