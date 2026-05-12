@@ -10,10 +10,13 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "lint:fix": "eslint . --fix",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "^1.25.5",
+    "@covalenthq/client-sdk": "^3.0.6",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -77,6 +80,7 @@
     "viem": "^2.48.11",
     "vite-tsconfig-paths": "^6.0.2",
     "wagmi": "^3.6.11",
+    "x402-solana": "^2.0.4",
     "zod": "^3.24.2"
   },
   "devDependencies": {
@@ -95,6 +99,7 @@
     "prettier": "^3.7.3",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "vite-plugin-node-polyfills": "^0.26.0"
   }
 }

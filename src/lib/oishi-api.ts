@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Oishi Backend API client.
  * Supports JWT sessions: sign wallet once → get token → no more popups.
@@ -24,6 +25,8 @@ export interface BackendAgent {
   handle: string;
   displayName: string;
   strategyId: string;
+  skillId: string | null;
+  toolIds: string[];
   commonRules: {
     dailyCapUsd: number;
     maxPerTxUsd: number;
@@ -31,8 +34,10 @@ export interface BackendAgent {
     quietHoursEnabled: boolean;
   };
   specificRules: Record<string, number | boolean>;
-  status: "active" | "paused" | "stopped" | "blocked";
+  status: "draft" | "active" | "paused" | "stopped" | "blocked";
   kyaIdentityPda: string | null;
+  metaplexAssetPubkey: string | null;
+  metaplexRegistrationUri: string | null;
   kyaReputationScore: number;
   attestationCount: number;
   totalEarnings: number;
@@ -49,6 +54,9 @@ export interface CreateAgentPayload {
   strategyId: string;
   commonRules?: BackendAgent["commonRules"];
   specificRules?: Record<string, number | boolean>;
+  skillId?: string;
+  toolIds?: string[];
+  llmProvider?: string;
 }
 
 export interface AgentContext {
@@ -78,6 +86,7 @@ export interface AgentDecision {
   status: "executed" | "blocked" | "error";
   blockReason?: string;
   timestamp: number;
+  txHash?: string;
 }
 
 export interface StrategyInfo {
@@ -100,12 +109,16 @@ function getStoredToken(): string | null {
 function setStoredToken(token: string) {
   try {
     localStorage.setItem(TOKEN_KEY, token);
-  } catch {}
+  } catch {
+    /* empty: best-effort localStorage */
+  }
 }
 export function clearStoredToken() {
   try {
     localStorage.removeItem(TOKEN_KEY);
-  } catch {}
+  } catch {
+    /* empty: best-effort localStorage */
+  }
 }
 export function getSessionToken(): string | null {
   return getStoredToken();
@@ -188,7 +201,13 @@ async function apiRequest<T>(
     clearStoredToken();
   }
 
-  if (!res.ok) throw new Error(data.error ?? `API error ${res.status}`);
+  if (!res.ok) throw new Error(data.error ?? data.message ?? `API error ${res.status}`);
+
+  // Unwrap standardized { code, message, data } response
+  if (data && typeof data === "object" && "code" in data && "data" in data) {
+    return (data.data ?? data) as T;
+  }
+
   return data as T;
 }
 
@@ -270,11 +289,51 @@ export async function getRegisterAgentTx(
   return apiRequest(`/onchain/register-agent/${agentId}`, "POST", wallet);
 }
 
+/** Confirm KYA + Metaplex registration (upgrades draft to active). */
+export async function confirmKyaRegistration(
+  wallet: string,
+  agentId: string,
+  payload: {
+    metaplexAssetPubkey: string;
+    metaplexRegistrationUri?: string;
+    kyaPda: string;
+    walletPublicKey?: string;
+  },
+): Promise<{ agent: BackendAgent }> {
+  return apiRequest(`/agents/${agentId}/kyaregister`, "PUT", wallet, payload);
+}
+
+/** Pay for agent creation via x402 USDC transfer. */
+export async function payAgent(
+  wallet: string,
+  agentId: string,
+  signature: string,
+  amountUsd: number,
+): Promise<{ agent: BackendAgent }> {
+  return apiRequest(`/agents/${agentId}/pay`, "POST", wallet, { signature, amountUsd });
+}
+
+/** Register a draft agent on-chain (KYA + Metaplex). */
+export async function registerAgentOnChain(
+  wallet: string,
+  agentId: string,
+): Promise<{
+  agentId?: string;
+  kyaPda: string;
+  kyaTransaction: string;
+  metaplex?: { assetPubkey: string; identityPda: string } | null;
+  estimatedFee?: string;
+}> {
+  return apiRequest(`/agents/${agentId}/register`, "POST", wallet);
+}
+
 export interface AgentBalance {
   agentId: string;
   wallet: string;
   sol: number;
+  usdc: number;
   solUsd: number;
+  usdcUsd: number;
   explorerUrl: string;
 }
 
@@ -288,6 +347,14 @@ export async function fundAgent(
   amountSol: number,
 ): Promise<{ transaction: string; from: string; to: string; amountSol: number }> {
   return apiRequest(`/onchain/fund-agent/${agentId}`, "POST", wallet, { amountSol });
+}
+
+export async function confirmAgentPayment(
+  wallet: string,
+  agentId: string,
+  amountSol: number,
+): Promise<{ paid: boolean; credits: number; cyclesRemaining: number }> {
+  return apiRequest(`/agents/${agentId}/confirm-payment`, "POST", wallet, { amountSol });
 }
 
 export async function getAgentSkills(wallet: string, agentId: string): Promise<any> {

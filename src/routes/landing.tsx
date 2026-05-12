@@ -30,7 +30,7 @@ export const Route = createFileRoute("/landing")({
       {
         name: "description",
         content:
-          "Programmable spending for AI agents: Solana-native wallet, LI.FI routing, OKX x402 · MPP · APP alignment, on-chain rules, and KYA reputation.",
+          "Programmable spending for AI agents: Solana-native wallet, LI.FI routing, OKX x402 · MPP · APP alignment, on-chain rules, and reputation.",
       },
     ],
   }),
@@ -113,8 +113,8 @@ function LandingPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.18, ease: easeOut }}
               >
-                Programmable caps, on-chain rules, and a KYA reputation score — so your bot can pay
-                for real work without turning into an expensive mistake.
+                Programmable caps, on-chain rules, and a reputation score, so your bot can pay for
+                real work without turning into an expensive mistake.
               </motion.p>
 
               <motion.div
@@ -153,9 +153,7 @@ function LandingPage() {
                   className="size-1.5 rounded-full bg-accent shrink-0"
                   aria-hidden
                   animate={
-                    reduceMotion
-                      ? undefined
-                      : { scale: [1, 1.25, 1], opacity: [1, 0.85, 1] }
+                    reduceMotion ? undefined : { scale: [1, 1.25, 1], opacity: [1, 0.85, 1] }
                   }
                   transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
                 />
@@ -229,7 +227,9 @@ function LandingPage() {
                   </span>
                   <div>
                     <p className="font-medium text-foreground">Solana settlement</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Fast finality · native USDC</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Fast finality · native USDC
+                    </p>
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">
@@ -274,10 +274,9 @@ function LandingPage() {
                 OKX builds on open rails like{" "}
                 <strong className="font-medium text-foreground">x402</strong> and{" "}
                 <strong className="font-medium text-foreground">MPP</strong> (Machine Payments
-                Protocol), then packages the full negotiate → pay → settle loop as{" "}
-                negotiate → pay → settle loop as{" "}
-                <strong className="font-medium text-foreground">APP</strong> (Agent Payments
-                Protocol). Oishi meets agents where those standards already want to live.
+                Protocol), then packages the full negotiate → pay → settle loop as negotiate → pay →
+                settle loop as <strong className="font-medium text-foreground">APP</strong> (Agent
+                Payments Protocol). Oishi meets agents where those standards already want to live.
               </p>
               <ul className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
                 <OkxProtocolCard
@@ -327,7 +326,9 @@ function LandingPage() {
                 </p>
               </li>
               <li className="rounded-3xl border border-dashed border-border/80 bg-muted/30 p-5 sm:p-6">
-                <p className="text-sm font-semibold text-foreground">Chaos scales faster than you.</p>
+                <p className="text-sm font-semibold text-foreground">
+                  Chaos scales faster than you.
+                </p>
                 <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
                   One bad tool call can drain a wallet. Rules on-chain mean panic becomes a pager,
                   not a post-mortem.
@@ -357,7 +358,7 @@ function LandingPage() {
               />
               <Feature
                 icon={<Zap className="size-5" strokeWidth={2.2} />}
-                title="KYA reputation"
+                title="reputation"
                 body="Behaviour becomes a score. Great agents look boring on purpose."
                 index={2}
               />
@@ -518,7 +519,9 @@ function OkxProtocolCard({
         {icon}
       </span>
       <p className="mt-4 font-display text-xl sm:text-2xl tracking-tight">{name}</p>
-      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mt-1">{tag}</p>
+      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mt-1">
+        {tag}
+      </p>
       <p className="text-sm text-muted-foreground mt-3 leading-relaxed flex-1">{body}</p>
       <a
         href={href}
@@ -582,7 +585,11 @@ function FlowConnectorHorizontal({ className = "" }: { className?: string }) {
       />
       <path id={pathId} d={FLOW_EDGE_H_D} fill="none" stroke="none" strokeWidth="0" />
       {!reduceMotion ? (
-        <circle r="4" className="fill-accent landing-flow-pulse-glow" vectorEffect="non-scaling-stroke">
+        <circle
+          r="4"
+          className="fill-accent landing-flow-pulse-glow"
+          vectorEffect="non-scaling-stroke"
+        >
           <animateMotion dur="2.35s" repeatCount="indefinite" rotate="auto" calcMode="linear">
             <mpath href={`#${pathId}`} />
           </animateMotion>
@@ -637,7 +644,11 @@ function FlowConnectorVertical({ className = "" }: { className?: string }) {
       />
       <path id={pathId} d={FLOW_EDGE_V_D} fill="none" stroke="none" strokeWidth="0" />
       {!reduceMotion ? (
-        <circle r="4" className="fill-accent landing-flow-pulse-glow" vectorEffect="non-scaling-stroke">
+        <circle
+          r="4"
+          className="fill-accent landing-flow-pulse-glow"
+          vectorEffect="non-scaling-stroke"
+        >
           <animateMotion dur="2.35s" repeatCount="indefinite" rotate="auto" calcMode="linear">
             <mpath href={`#${pathId}`} />
           </animateMotion>
@@ -699,7 +710,10 @@ function PartnerMarquee() {
               {chunk}
               {chunk}
             </div>
-            <div className="flex items-center gap-10 sm:gap-16 pl-4 pr-6 sm:pr-10 shrink-0" aria-hidden>
+            <div
+              className="flex items-center gap-10 sm:gap-16 pl-4 pr-6 sm:pr-10 shrink-0"
+              aria-hidden
+            >
               {chunk}
               {chunk}
               {chunk}

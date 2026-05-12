@@ -1,8 +1,25 @@
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useWallet as useWalletRaw } from "@solana/wallet-adapter-react";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useAgentByOwner, getTier, type AgentIdentity } from "@/hooks/use-solana-data";
 import { useOishiBackend } from "@/hooks/use-oishi-backend";
+
+// Safe: never throws even without a wallet provider
+function useWallet() {
+  try {
+    return useWalletRaw();
+  } catch {
+    return {
+      publicKey: null,
+      connected: false,
+      wallet: null,
+      connecting: false,
+      disconnect: () => {},
+      select: () => {},
+      signMessage: null,
+    };
+  }
+}
 
 /**
  * Merges on-chain KYA identity with the first backend agent for this wallet.
@@ -48,5 +65,18 @@ export function useUiAgent() {
   const hasAgent = Boolean(uiAgent);
   const isLoading = agentLoading || backendAgentsLoading;
 
-  return { uiAgent, hasAgent, isLoading, connected, publicKey, agent, backendAgent };
+  const isDraft = hasAgent && backendAgent?.status === "draft";
+  const isRegistered = hasAgent && !isDraft;
+
+  return {
+    uiAgent,
+    hasAgent,
+    isLoading,
+    connected,
+    publicKey,
+    agent,
+    backendAgent,
+    isDraft,
+    isRegistered,
+  };
 }

@@ -16,15 +16,11 @@ import { StrategyPickerCard } from "@/components/strategy/strategy-picker-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  AGENT_STRATEGIES,
-  getStrategy,
-  isStrategyId,
-  type StrategyId,
-} from "@/data/agent-strategies";
+import { AGENT_STRATEGIES, getStrategy } from "@/data/agent-strategies";
+import { AGENT_SKILLS, getSkill, isSkillId } from "@/data/agent-skills";
+import { AGENT_TOOLS, getTool } from "@/data/agent-tools";
 import { fullOishiHandle, normalizeHandlePrefix, validateHandlePrefix } from "@/lib/oishi-handle";
 import { useOishiBackend } from "@/hooks/use-oishi-backend";
-import { useSolanaTx } from "@/hooks/use-solana-tx";
 
 const STEP_LABELS = ["Identity", "Strategy", "Rules"] as const;
 
@@ -57,25 +53,23 @@ function WizardHeading({ title, subtitle }: { title: string; subtitle: string })
   );
 }
 
-export function LaunchNewAgentWizard({ presetStrategy }: { presetStrategy?: StrategyId }) {
+export function LaunchNewAgentWizard({ presetStrategy }: { presetStrategy?: string }) {
   const { connected } = useWallet();
   const { connection } = useConnection();
   const { api, isReady } = useOishiBackend();
-  const { signAndSend, ready: txReady } = useSolanaTx();
   const navigate = useNavigate();
 
   const [step, setStep] = useState(0);
   const [displayName, setDisplayName] = useState("");
   const [handlePrefix, setHandlePrefix] = useState("");
   const [handleTouched, setHandleTouched] = useState(false);
-  const [selectedStrategyId, setSelectedStrategyId] = useState<StrategyId | null>(null);
+  const [selectedStrategyId, setSelectedStrategyId] = useState<string | null>(null);
   const [common, setCommon] = useState<CommonAgentRules>(defaultCommonRules);
   const [specific, setSpecific] = useState<Record<string, number | boolean>>({});
 
   const [launchPhase, setLaunchPhase] = useState<LaunchPhase>("idle");
   const [launchError, setLaunchError] = useState<string | null>(null);
   /** On-chain registration signature (shown on success screen) */
-  const [launchSignature, setLaunchSignature] = useState<string | null>(null);
 
   const normalizedPrefix = useMemo(() => normalizeHandlePrefix(handlePrefix), [handlePrefix]);
   const handleError = handleTouched ? validateHandlePrefix(normalizedPrefix) : null;
@@ -88,7 +82,7 @@ export function LaunchNewAgentWizard({ presetStrategy }: { presetStrategy?: Stra
         : null;
 
   useEffect(() => {
-    if (presetStrategy && isStrategyId(presetStrategy)) {
+    if (presetStrategy && isSkillId(presetStrategy)) {
       setSelectedStrategyId(presetStrategy);
     }
   }, [presetStrategy]);
@@ -127,32 +121,18 @@ export function LaunchNewAgentWizard({ presetStrategy }: { presetStrategy?: Stra
     setSpecific({});
     setLaunchPhase("idle");
     setLaunchError(null);
-    setLaunchSignature(null);
     navigate({ to: "/launch", search: { tab: "new" } });
   };
 
   const handleLaunch = async () => {
     if (!api || !isReady) {
-      setLaunchError("Wallet not connected. Please connect your Solana wallet first.");
+      setLaunchError("Sign in with your wallet first.");
       setLaunchPhase("error");
       return;
     }
-
-    if (!txReady) {
-      setLaunchError(
-        "Launch requires a wallet that can submit Solana transactions (sendTransaction). Reconnect with Phantom, Solflare, or another signing wallet.",
-      );
-      setLaunchPhase("error");
-      return;
-    }
-
     const handle = fullOishiHandle(normalizedPrefix);
-
     setLaunchPhase("registering");
     setLaunchError(null);
-    setLaunchSignature(null);
-
-    let createdId: string | null = null;
     try {
       const created = await api.createAgent({
         displayName: displayTrimmed,
@@ -161,43 +141,11 @@ export function LaunchNewAgentWizard({ presetStrategy }: { presetStrategy?: Stra
         commonRules: common,
         specificRules: specific,
       });
-
-      createdId = created.id;
-      setLaunchPhase("creating");
-
-      await new Promise((r) => setTimeout(r, 150));
-
-      setLaunchPhase("onchain");
-      console.log("[oishi] Requesting on-chain registration tx for", created.id);
-      const { transaction, pda } = await api.getRegisterAgentTx(created.id);
-      console.log("[oishi] Got tx, PDA:", pda);
-      const { signature } = await signAndSend(transaction);
-      setLaunchSignature(signature);
-      console.log("[oishi] On-chain tx confirmed", signature);
-
+      console.log("[oishi] Draft agent created:", created);
       setLaunchPhase("done");
-      console.log("[oishi] Agent launched:", created);
-
-      setTimeout(() => {
-        navigate({ to: "/", replace: true });
-      }, 2000);
+      setTimeout(() => navigate({ to: "/", replace: true }), 2000);
     } catch (err: unknown) {
-      if (createdId) {
-        try {
-          await api.stopAgent(createdId);
-        } catch {
-          /* best-effort rollback */
-        }
-      }
-      let message =
-        err instanceof Error
-          ? err.message
-          : typeof err === "string"
-            ? err
-            : "Failed to launch agent";
-      if (/user rejected/i.test(message) || /denied/i.test(message)) {
-        message = "Transaction cancelled or declined. Launch was not completed.";
-      }
+      const message = err instanceof Error ? err.message : "Failed to launch agent";
       setLaunchError(message);
       setLaunchPhase("error");
     }
@@ -325,10 +273,10 @@ export function LaunchNewAgentWizard({ presetStrategy }: { presetStrategy?: Stra
         </p>
 
         <div className="grid grid-cols-1 gap-3">
-          {AGENT_STRATEGIES.map((s) => (
+          {AGENT_SKILLS.map((s) => (
             <StrategyPickerCard
               key={s.id}
-              strategy={s}
+              skill={s}
               mode="wizard"
               selected={selectedStrategyId === s.id}
               onSelect={() => setSelectedStrategyId(s.id)}
@@ -350,7 +298,7 @@ export function LaunchNewAgentWizard({ presetStrategy }: { presetStrategy?: Stra
     );
   }
 
-  const s = selectedStrategyId ? getStrategy(selectedStrategyId) : undefined;
+  const s = selectedStrategyId ? getSkill(selectedStrategyId) : undefined;
   if (!s) {
     return (
       <>
@@ -362,7 +310,7 @@ export function LaunchNewAgentWizard({ presetStrategy }: { presetStrategy?: Stra
     );
   }
 
-  const strategy = s;
+  const skill = s;
 
   if (launchPhase !== "idle") {
     return (
@@ -402,8 +350,8 @@ export function LaunchNewAgentWizard({ presetStrategy }: { presetStrategy?: Stra
               </div>
               <h3 className="mt-6 text-lg font-semibold">Almost there…</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Spinning up the {strategy.name} strategy engine. Your agent will wake every 60
-                seconds.
+                Spinning up the {skill?.name ?? "Agent"} strategy engine. Your agent will wake every
+                60 seconds.
               </p>
               <div className="mt-8 w-full max-w-xs space-y-3">
                 <div className="flex items-center gap-3 text-sm text-success">
@@ -463,7 +411,7 @@ export function LaunchNewAgentWizard({ presetStrategy }: { presetStrategy?: Stra
               <div className="mt-8 w-full max-w-xs space-y-3">
                 <div className="flex items-center gap-3 text-sm text-success">
                   <CheckCircle className="size-4" />
-                  Registered with Oishi ({strategy.protocol})
+                  Registered with Oishi ({skill?.protocol ?? ""})
                 </div>
                 <div className="flex items-center gap-3 text-sm text-success">
                   <CheckCircle className="size-4" />
@@ -473,24 +421,6 @@ export function LaunchNewAgentWizard({ presetStrategy }: { presetStrategy?: Stra
                   <CheckCircle className="size-4" />
                   Agent scheduler active
                 </div>
-                {launchSignature ? (
-                  <div className="rounded-xl border border-border bg-muted/30 px-3 py-3 text-left text-xs">
-                    <p className="text-muted-foreground font-medium uppercase tracking-wider mb-2">
-                      Transaction signature
-                    </p>
-                    <p className="font-mono text-[11px] text-foreground break-all leading-snug">
-                      {launchSignature}
-                    </p>
-                    <a
-                      href={solanaExplorerTxUrl(launchSignature, connection.rpcEndpoint)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-2 inline-block text-accent-foreground underline underline-offset-4 font-medium"
-                    >
-                      View on Explorer
-                    </a>
-                  </div>
-                ) : null}
               </div>
               <p className="mt-6 text-xs text-muted-foreground">Redirecting to dashboard…</p>
             </>
@@ -548,41 +478,38 @@ export function LaunchNewAgentWizard({ presetStrategy }: { presetStrategy?: Stra
       </div>
 
       <div className="rounded-2xl border border-border bg-muted/20 p-4 flex gap-3 items-start mb-5">
-        <ProtocolTile strategy={strategy} size="lg" />
+        <ProtocolTile skill={skill} size="lg" />
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">
-            {strategy.protocol}
+            {skill?.protocol ?? ""}
           </p>
-          <p className="font-medium text-foreground">{strategy.name}</p>
-          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{strategy.tagline}</p>
+          <p className="font-medium text-foreground">{skill?.name ?? "Agent"}</p>
+          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+            {skill?.tagline ?? ""}
+          </p>
         </div>
       </div>
 
       <CommonAgentRulesForm value={common} onChange={setCommon} className="mb-4" />
-      <StrategySpecificRulesForm strategyId={strategy.id} value={specific} onChange={setSpecific} />
+      <StrategySpecificRulesForm
+        strategyId={skill?.id ?? ""}
+        value={specific}
+        onChange={setSpecific}
+      />
 
       <div className="mt-6 flex flex-col gap-3">
         <Button
           variant="accent"
           className="w-full rounded-full h-12 text-base"
-          disabled={!connected || !isReady || !txReady}
+          disabled={!connected || !isReady}
           onClick={handleLaunch}
         >
           {!connected
             ? "Connect wallet to launch"
             : !isReady
               ? "Waiting for wallet sign-in…"
-              : !txReady
-                ? "Wallet cannot send Solana txs"
-                : "Launch agent"}
+              : "Launch agent"}
         </Button>
-        {connected && isReady && !txReady ? (
-          <p className="text-[11px] text-destructive/90 text-center leading-relaxed">
-            This adapter does not expose <span className="font-mono">sendTransaction</span>.
-            Disconnect and choose Phantom, Solflare, or another wallet that submits transactions —
-            launch completes only after on-chain confirmation.
-          </p>
-        ) : null}
         <Button
           type="button"
           variant="outline"

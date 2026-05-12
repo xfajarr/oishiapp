@@ -1,7 +1,16 @@
-import { useConnection } from "@solana/wallet-adapter-react";
+import { useConnection as useConnectionRaw } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
+
+// Safe: never throws even without a provider (SSR / route matching)
+function useConnection() {
+  try {
+    return useConnectionRaw();
+  } catch {
+    return { connection: null as unknown as import("@solana/web3.js").Connection, endpoint: "" };
+  }
+}
 
 // ── KYA Program ──────────────────────────────────────────────────────
 const KYA_PROGRAM_ID = new PublicKey("7QaaaMxxPavk8KRZwS5WwbPzPmRkXPtjFmfxh2M8ev1Z");
@@ -186,8 +195,7 @@ export function useBalances(owner: PublicKey | null) {
       ]);
 
       const sol = solLamports / 1e9;
-      const usdc =
-        tokenAccounts.value[0]?.account?.data?.parsed?.info?.tokenAmount?.uiAmount ?? 0;
+      const usdc = tokenAccounts.value[0]?.account?.data?.parsed?.info?.tokenAmount?.uiAmount ?? 0;
 
       // Approximate USD prices (SOL ~$130 devnet, USDC ~$1)
       const solUsd = sol * 130;

@@ -97,6 +97,7 @@ function ProfilePage() {
   const [copied, setCopied] = useState<string | null>(null);
   const [profileTab, setProfileTab] = useState("kya");
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [registering, setRegistering] = useState(false);
 
   const copyFn = useCallback((text: string, label: string) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -516,6 +517,59 @@ function ProfilePage() {
               )}
             </button>
 
+            {/* ── KYA Registration (if no on-chain identity) ──────────────── */}
+            {selected && !selected.kyaIdentityPda && (
+              <section className="rounded-3xl bg-amber-500/5 border border-amber-500/20 p-5 text-center">
+                {!registering ? (
+                  <>
+                    <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                      KYA your Agent
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1 mb-4">
+                      Register on Metaplex + Oishi KYA for verifiable on-chain identity.
+                    </p>
+                    <button
+                      type="button"
+                      disabled={!api}
+                      onClick={async () => {
+                        setRegistering(true);
+                        try {
+                          const wallet = (window as any).solana;
+                          const { payWithUsdc } = await import("@/lib/x402-payment");
+                          const { signature: paySig } = await payWithUsdc(wallet, 0.001);
+                          await api!.payAgent(selected.id, paySig, 0.001);
+                          const reg = await api!.registerAgent(selected.id);
+                          const { Transaction, Connection } = await import("@solana/web3.js");
+                          const conn = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
+                          const tx = Transaction.from(Uint8Array.from(atob(reg.kyaTransaction), c => c.charCodeAt(0)));
+                          const { blockhash } = await conn.getLatestBlockhash();
+                          tx.recentBlockhash = blockhash;
+                          tx.feePayer = wallet.publicKey;
+                          const txSig = await wallet.signAndSendTransaction(tx);
+                          await conn.confirmTransaction(txSig, "confirmed");
+                          await api!.confirmKyaRegistration(selected.id, { kyaPda: reg.kyaPda, metaplexAssetPubkey: reg.metaplex?.assetPubkey ?? "" });
+                          queryClient.invalidateQueries({ queryKey: AGENTS_QUERY_KEY(walletBp) });
+                        } catch (err) {
+                          const msg = err instanceof Error ? err.message : "KYA failed";
+                          alert(msg);
+                        } finally {
+                          setRegistering(false);
+                        }
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full bg-ink text-ink-foreground px-6 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
+                      {registering ? (
+                        <><Loader2 className="size-4 animate-spin" /> Registering…</>
+                      ) : (
+                        "KYA now"
+                      )}
+                    </button>
+                  </>
+                ) : null}
+              </section>
+            )}
+
+
             {selected?.kyaIdentityPda ? (
               <button
                 type="button"
@@ -697,7 +751,8 @@ function StatusBadge({
 }: {
   status: BackendAgent["status"];
 }) {
-  const styles: Record<BackendAgent["status"], string> = {
+  const styles: Record<string, string> = {
+    draft: "bg-amber-500/15 text-amber-600 border-amber-500/25",
     active: "bg-green-500/15 text-green-600 border-green-500/25",
     paused: "bg-amber-500/15 text-amber-700 border-amber-500/25",
     stopped: "bg-muted text-muted-foreground border-border",

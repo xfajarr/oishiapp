@@ -108,7 +108,8 @@
     border-color: var(--color-border);
   }
 
-  html, body {
+  html,
+  body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
@@ -123,13 +124,23 @@
 }
 
 @layer utilities {
-  .font-display { font-family: var(--font-display); }
-  .font-mono { font-family: var(--font-mono); }
+  .font-display {
+    font-family: var(--font-display);
+  }
+  .font-mono {
+    font-family: var(--font-mono);
+  }
 
-  .no-scrollbar::-webkit-scrollbar { display: none; }
-  .no-scrollbar { scrollbar-width: none; }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
 
-  .tabular { font-variant-numeric: tabular-nums; }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 @keyframes landing-marquee {

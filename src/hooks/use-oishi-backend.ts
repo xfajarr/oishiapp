@@ -30,6 +30,9 @@ import {
 } from "@/lib/oishi-api";
 import type { CreateAgentPayload, BackendAgent } from "@/lib/oishi-api";
 
+// Module-level flag persists across StrictMode remounts
+let _loginInProgress = false;
+
 export function useOishiBackend() {
   const { publicKey, signMessage, connected } = useWallet();
   const wallet = publicKey?.toBase58() ?? null;
@@ -52,9 +55,10 @@ export function useOishiBackend() {
     if (wallet && prevWallet.current && prevWallet.current !== wallet) {
       clearStoredToken();
       setIsAuthenticated(false);
-      loginInFlight.current = false;
+      _loginInProgress = false;
     }
     prevWallet.current = wallet;
+    _loginInProgress = false;
   }, [wallet]);
 
   const canSign = Boolean(signMessage);
@@ -65,7 +69,7 @@ export function useOishiBackend() {
       if (!connected) {
         setIsAuthenticated(false);
         clearStoredToken();
-        loginInFlight.current = false;
+        _loginInProgress = false;
       }
       return;
     }
@@ -76,10 +80,10 @@ export function useOishiBackend() {
       return;
     }
 
-    if (!canSign || loginInFlight.current) return;
+    if (!canSign || _loginInProgress) return;
 
     let cancelled = false;
-    loginInFlight.current = true;
+    _loginInProgress = true;
     setAuthError(null);
 
     (async () => {
@@ -106,6 +110,7 @@ export function useOishiBackend() {
   const manualLogin = useCallback(async () => {
     if (!wallet) return;
     setAuthError(null);
+    _loginInProgress = true;
     try {
       await login(wallet);
       setIsAuthenticated(true);
@@ -113,6 +118,7 @@ export function useOishiBackend() {
       setAuthError(err instanceof Error ? err.message : "Authentication failed");
       setIsAuthenticated(false);
     }
+    _loginInProgress = false;
   }, [wallet]);
 
   const api = useMemo(() => {
@@ -140,8 +146,12 @@ export function useOishiBackend() {
       getRegisterAgentTx: (agentId: string) => getRegisterAgentTx(wallet, agentId),
       getAgentBalance: (agentId: string) => getAgentBalance(wallet, agentId),
       fundAgent: (agentId: string, amountSol: number) => fundAgent(wallet, agentId, amountSol),
+      payAgent: (agentId: string, signature: string, amountUsd: number) => payAgent(wallet, agentId, signature, amountUsd),
+      registerAgent: (agentId: string) => registerAgent(wallet, agentId),
+      confirmKyaRegistration: (agentId: string, payload: any) => confirmKyaRegistration(wallet, agentId, payload),
       fetchStrategies,
     };
+    _loginInProgress = false;
   }, [wallet]);
 
   return {

@@ -1,10 +1,41 @@
 /**
  * Hook: sign and send Solana transactions via the connected wallet.
  * Uses wallet adapter's native sendTransaction which handles signing internally.
+ *
+ * NOTE: useWallet / useConnection throw outside their provider (SSR).
+ * A noop shim is returned in that case — never let those hooks throw uncaught.
  */
-import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import {
+  useWallet as useWalletRaw,
+  useConnection as useConnectionRaw,
+} from "@solana/wallet-adapter-react";
 import { Transaction, VersionedTransaction } from "@solana/web3.js";
 import { useCallback } from "react";
+
+// ── Safe wrappers (return null instead of throwing when no provider) ───────
+function useWallet() {
+  try {
+    return useWalletRaw();
+  } catch {
+    return {
+      publicKey: null,
+      sendTransaction: null as unknown,
+      connected: false,
+      wallet: null,
+      connecting: false,
+      disconnect: () => {},
+      select: () => {},
+    };
+  }
+}
+
+function useConnection() {
+  try {
+    return useConnectionRaw();
+  } catch {
+    return { connection: null as unknown as import("@solana/web3.js").Connection, endpoint: "" };
+  }
+}
 
 function base64ToBytes(b64: string): Uint8Array {
   const bin = atob(b64);
@@ -58,8 +89,9 @@ function enrichError(err: unknown): Error {
 }
 
 export function useSolanaTx() {
-  const { publicKey, sendTransaction, connected } = useWallet();
+  const { publicKey, sendTransaction: sendTx, connected } = useWallet();
   const { connection } = useConnection();
+  const sendTransaction = sendTx as ReturnType<typeof useWalletRaw>["sendTransaction"];
 
   const signAndSend = useCallback(
     async (serializedTx: string): Promise<{ signature: string }> => {

@@ -27,7 +27,17 @@ import { useOishiBackend } from "@/hooks/use-oishi-backend";
 import { useSolanaTx } from "@/hooks/use-solana-tx";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getLifiQuote, getTokenAddress, toWei, DECIMALS, type LifiQuoteResult } from "@/lib/lifi";
-import { ArrowRight, Check, ChevronRight, Loader2, AlertTriangle, RefreshCw, CheckCircle2, Send, ExternalLink } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  ChevronRight,
+  Loader2,
+  AlertTriangle,
+  RefreshCw,
+  CheckCircle2,
+  Send,
+  ExternalLink,
+} from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
@@ -279,9 +289,7 @@ function FundPage() {
       setSelectedAgentId(null);
       return;
     }
-    setSelectedAgentId((prev) =>
-      prev && agents.some((a) => a.id === prev) ? prev : agents[0].id,
-    );
+    setSelectedAgentId((prev) => (prev && agents.some((a) => a.id === prev) ? prev : agents[0].id));
   }, [agents]);
 
   const selectedAgent = agents.find((a) => a.id === selectedAgentId) ?? null;
@@ -510,12 +518,14 @@ function FundPage() {
   return (
     <AppPage subtitle="SOL or cross-chain" title="Fund agent">
       <p className="text-sm text-muted-foreground mt-1 mb-6">
-        Pick which agent receives the deposit. Send SOL directly from Phantom, or bridge from another chain
-        with LI.FI into that agent&apos;s custodial Solana wallet.
+        Pick which agent receives the deposit. Send SOL directly from Phantom, or bridge from
+        another chain with LI.FI into that agent&apos;s custodial Solana wallet.
       </p>
 
       {!backendReady ? (
-        <p className="text-sm text-muted-foreground text-center py-12">Connect and sign in to load your agents.</p>
+        <p className="text-sm text-muted-foreground text-center py-12">
+          Connect and sign in to load your agents.
+        </p>
       ) : agentsLoading ? (
         <div className="flex justify-center py-16">
           <Loader2 className="size-8 animate-spin text-muted-foreground" />
@@ -537,7 +547,9 @@ function FundPage() {
       ) : selectedAgent ? (
         <>
           <section className="rounded-3xl bg-card border border-border p-5">
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-3">Deposit to</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-3">
+              Deposit to
+            </p>
             {agents.length > 1 ? (
               <Select value={selectedAgentId!} onValueChange={(id) => setSelectedAgentId(id)}>
                 <SelectTrigger className={sourceSelectTriggerClass}>
@@ -548,7 +560,9 @@ function FundPage() {
                     <SelectItem key={a.id} value={a.id} className="py-3">
                       <span className="flex flex-col gap-0.5 text-left">
                         <span className="font-medium">{a.displayName}</span>
-                        <span className="text-[11px] text-muted-foreground font-mono">{a.handle}</span>
+                        <span className="text-[11px] text-muted-foreground font-mono">
+                          {a.handle}
+                        </span>
                       </span>
                     </SelectItem>
                   ))}
@@ -557,7 +571,9 @@ function FundPage() {
             ) : (
               <div>
                 <p className="font-medium">{selectedAgent.displayName}</p>
-                <p className="text-xs text-muted-foreground font-mono mt-0.5">{selectedAgent.handle}</p>
+                <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                  {selectedAgent.handle}
+                </p>
               </div>
             )}
             {agentDepositAddress ? (
@@ -580,7 +596,7 @@ function FundPage() {
           </section>
 
           <Tabs defaultValue="sol" className="mt-4">
-            <TabsList className="flex h-11 w-full gap-1 rounded-2xl bg-muted p-1">
+            <TabsList className="flex h-11 w-full gap-1 rounded-2xl bg-muted p-1 relative">
               <TabsTrigger
                 value="sol"
                 className={cn(
@@ -608,356 +624,367 @@ function FundPage() {
             <TabsContent value="bridge" className="mt-4 space-y-4 focus-visible:outline-none">
               {/* ── Receive amount input ─────────────────────────────────── */}
               <section className="rounded-3xl bg-card border border-border p-6">
-        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-          Receive on Solana (USDC)
-        </p>
-        <input
-          inputMode="decimal"
-          value={amount}
-          disabled={!interactive}
-          onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
-          className="w-full mt-2 bg-transparent font-display text-6xl tabular outline-none disabled:opacity-50"
-        />
-        <div className="mt-4 flex gap-2 flex-wrap">
-          {["100", "250", "500", "1000"].map((v) => (
-            <button
-              key={v}
-              type="button"
-              disabled={!interactive}
-              onClick={() => setAmount(v)}
-              className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
-                amount === v
-                  ? "bg-ink text-ink-foreground border-ink"
-                  : "bg-secondary text-foreground border-border",
-                !interactive && "opacity-50 pointer-events-none",
-              )}
-            >
-              ${v}
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-8 pt-6 border-t border-border">
-          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            Credit to (agent wallet)
-          </p>
-          <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-            LI.FI settles on this agent-owned Solana address — not your personal wallet.
-          </p>
-          {agentDepositAddress ? (
-            <p className="mt-3 text-[11px] font-mono text-muted-foreground text-center break-all px-1 leading-relaxed">
-              {agentDepositAddress}
-            </p>
-          ) : (
-            <p className="text-xs text-amber-600 dark:text-amber-500 text-center mt-3">
-              Pick an agent with a valid wallet to load quotes.
-            </p>
-          )}
-        </div>
-      </section>
-
-      {/* ── Source + Route ───────────────────────────────────────── */}
-              <section className="rounded-3xl bg-card border border-border p-5 space-y-5">
-        {/* ── EVM Wallet ────────────────────────────────────────── */}
-        {interactive && (
-          <div>
-            <p className="text-sm font-medium mb-3">Source wallet</p>
-            {evmConnected && evmAddress ? (
-              <div className="flex items-center justify-between rounded-2xl bg-secondary px-4 py-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  {evmChainId === mainnet.id ? (
-                    <IconEthereum className="size-5 shrink-0" />
-                  ) : evmChainId === arbitrum.id ? (
-                    <IconArbitrum className="size-5 shrink-0" />
-                  ) : evmChainId === base.id ? (
-                    <IconBase className="size-5 shrink-0" />
-                  ) : (
-                    <IconEthereum className="size-5 shrink-0" />
-                  )}
-                  <span className="text-sm font-mono truncate">
-                    {evmAddress.slice(0, 6)}…{evmAddress.slice(-4)}
-                  </span>
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                  Receive on Solana (USDC)
+                </p>
+                <input
+                  inputMode="decimal"
+                  value={amount}
+                  disabled={!interactive}
+                  onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
+                  className="w-full mt-2 bg-transparent font-display text-6xl tabular outline-none disabled:opacity-50"
+                />
+                <div className="mt-4 flex gap-2 flex-wrap">
+                  {["100", "250", "500", "1000"].map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      disabled={!interactive}
+                      onClick={() => setAmount(v)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                        amount === v
+                          ? "bg-ink text-ink-foreground border-ink"
+                          : "bg-secondary text-foreground border-border",
+                        !interactive && "opacity-50 pointer-events-none",
+                      )}
+                    >
+                      ${v}
+                    </button>
+                  ))}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => disconnect()}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Disconnect
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    connect({
-                      connector: connectors.find((c) => c.id === "injected") ?? connectors[0],
-                    })
-                  }
-                  className="w-full rounded-2xl border border-border bg-secondary px-4 py-3 text-sm font-medium flex items-center justify-center gap-2 hover:bg-secondary/80 transition-colors"
-                >
-                  <IconEthereum className="size-4" />
-                  Connect MetaMask / EVM wallet
-                </button>
-                {connectors.some((c) => c.id === "walletConnect") && (
+
+                <div className="mt-8 pt-6 border-t border-border">
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                    Credit to (agent wallet)
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                    LI.FI settles on this agent-owned Solana address — not your personal wallet.
+                  </p>
+                  {agentDepositAddress ? (
+                    <p className="mt-3 text-[11px] font-mono text-muted-foreground text-center break-all px-1 leading-relaxed">
+                      {agentDepositAddress}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-amber-600 dark:text-amber-500 text-center mt-3">
+                      Pick an agent with a valid wallet to load quotes.
+                    </p>
+                  )}
+                </div>
+              </section>
+
+              {/* ── Source + Route ───────────────────────────────────────── */}
+              <section className="rounded-3xl bg-card border border-border p-5 space-y-5">
+                {/* ── EVM Wallet ────────────────────────────────────────── */}
+                {interactive && (
+                  <div>
+                    <p className="text-sm font-medium mb-3">Source wallet</p>
+                    {evmConnected && evmAddress ? (
+                      <div className="flex items-center justify-between rounded-2xl bg-secondary px-4 py-3">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {evmChainId === mainnet.id ? (
+                            <IconEthereum className="size-5 shrink-0" />
+                          ) : evmChainId === arbitrum.id ? (
+                            <IconArbitrum className="size-5 shrink-0" />
+                          ) : evmChainId === base.id ? (
+                            <IconBase className="size-5 shrink-0" />
+                          ) : (
+                            <IconEthereum className="size-5 shrink-0" />
+                          )}
+                          <span className="text-sm font-mono truncate">
+                            {evmAddress.slice(0, 6)}…{evmAddress.slice(-4)}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => disconnect()}
+                          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          Disconnect
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            connect({
+                              connector:
+                                connectors.find((c) => c.id === "injected") ?? connectors[0],
+                            })
+                          }
+                          className="w-full rounded-2xl border border-border bg-secondary px-4 py-3 text-sm font-medium flex items-center justify-center gap-2 hover:bg-secondary/80 transition-colors"
+                        >
+                          <IconEthereum className="size-4" />
+                          Connect MetaMask / EVM wallet
+                        </button>
+                        {connectors.some((c) => c.id === "walletConnect") && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              connect({
+                                connector: connectors.find((c) => c.id === "walletConnect")!,
+                              })
+                            }
+                            className="w-full rounded-2xl border border-border bg-secondary px-4 py-3 text-sm font-medium flex items-center justify-center gap-2 hover:bg-secondary/80 transition-colors"
+                          >
+                            <img
+                              src="/images/walletconnect.svg"
+                              alt="WalletConnect"
+                              className="size-4"
+                            />
+                            WalletConnect
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div>
+                  <p className="text-sm font-medium mb-3">Source</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                        Chain
+                      </span>
+                      <Select
+                        disabled={!interactive}
+                        value={chainId}
+                        onValueChange={(v) => {
+                          const c = v as ChainId;
+                          setChainId(c);
+                          const next = TOKENS_BY_CHAIN[c][0].id;
+                          setTokenId(next);
+                          setLifiQuote(null);
+                        }}
+                      >
+                        <SelectTrigger className={sourceSelectTriggerClass}>
+                          <div className="flex min-w-0 flex-1 items-center text-left">
+                            <SelectValue placeholder="Chain" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CHAINS.map(({ id, name, Icon }) => (
+                            <SelectItem key={id} value={id} className="py-2.5">
+                              <span className="flex items-center gap-2.5 min-w-0">
+                                <Icon className="size-5 shrink-0" />
+                                <span className="truncate">{name}</span>
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                        Token
+                      </span>
+                      <Select
+                        disabled={!interactive}
+                        value={tokenId}
+                        onValueChange={(v) => {
+                          setTokenId(v as TokenId);
+                          setLifiQuote(null);
+                        }}
+                      >
+                        <SelectTrigger className={sourceSelectTriggerClass}>
+                          <div className="flex min-w-0 flex-1 items-center text-left">
+                            <SelectValue placeholder="Token" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {tokens.map(({ id, label, Icon }) => (
+                            <SelectItem key={id} value={id} className="py-2.5">
+                              <span className="flex items-center gap-2.5 min-w-0">
+                                <Icon className="size-5 shrink-0" />
+                                <span className="truncate">{label}</span>
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Route visualization ────────────────────────────────── */}
+                <div>
+                  <p className="text-sm font-medium mb-3">Route</p>
+                  <div className="flex items-stretch justify-between gap-1 sm:gap-2">
+                    <RouteLeg
+                      icon={
+                        <RouteTokenPair
+                          left={<ChainIcon className="size-[22px]" />}
+                          right={<TokenIcon className="size-[22px]" />}
+                        />
+                      }
+                      label={chainMeta.name}
+                      sub={tokenMeta.label}
+                    />
+                    <FlowArrow />
+                    <RouteLeg
+                      icon={<IconLifi className="size-7" />}
+                      label="LI.FI"
+                      sub={quoteStepText}
+                      compact
+                    />
+                    <FlowArrow />
+                    <RouteLeg
+                      highlight
+                      icon={
+                        <RouteTokenPair
+                          variant="accent"
+                          left={<IconSolana className="size-[22px]" />}
+                          right={<IconUSDC className="size-[22px]" />}
+                        />
+                      }
+                      label="Solana"
+                      sub={receiveLabel}
+                    />
+                  </div>
+                </div>
+
+                {/* ── Error banner ───────────────────────────────────────── */}
+                {quoteError && phase === "idle" && (
+                  <div className="flex items-start gap-3 rounded-2xl bg-destructive/10 border border-destructive/30 px-4 py-3">
+                    <AlertTriangle className="size-4 shrink-0 text-destructive mt-0.5" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-destructive">
+                        Could not load bridge quote
+                      </p>
+                      <p className="text-xs text-destructive/80 mt-0.5 line-clamp-2">
+                        {quoteError}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={retryQuote}
+                      className="shrink-0 text-destructive hover:text-destructive/80 transition-colors"
+                    >
+                      <RefreshCw className="size-4" />
+                    </button>
+                  </div>
+                )}
+
+                {/* ── Quote details ──────────────────────────────────────── */}
+                <ul className="space-y-2 text-sm pt-1">
+                  <Row k="You send" v={quoteSendText} bold loading={quoteLoading} />
+                  <Row k="Estimated time" v={quoteEtaText} loading={quoteLoading} />
+                  <Row k="Network + bridge fee" v={quoteFeeText} loading={quoteLoading} />
+                  <Row k="You receive" v={quoteReceiveText} bold loading={quoteLoading} />
+                  {lifiQuote && (
+                    <Row
+                      k="Provider"
+                      v={
+                        lifiQuote.route.steps[0]?.toolDetails?.name ??
+                        lifiQuote.route.steps[0]?.tool ??
+                        "LI.F.I"
+                      }
+                    />
+                  )}
+                </ul>
+
+                {/* ── Bridge progress ────────────────────────────────────── */}
+                {(phase === "bridging" || phase === "success") && (
+                  <div className="pt-2 border-t border-border space-y-3" aria-live="polite">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {phase === "success" ? "Bridge complete" : "Bridge in progress"}
+                      </span>
+                      <span className="text-xs tabular text-muted-foreground">{progress}%</span>
+                    </div>
+                    <Progress className="h-2 bg-secondary" value={progress} />
+                    <ol className="space-y-1.5">
+                      {BRIDGE_STEPS.map((label, i) => {
+                        const complete = phase === "success" || i < stepIndex;
+                        const inProgress = phase === "bridging" && i === stepIndex;
+                        return (
+                          <li
+                            key={label}
+                            className={cn(
+                              "flex items-center gap-2 text-xs transition-colors",
+                              complete
+                                ? "text-success"
+                                : inProgress
+                                  ? "text-foreground font-medium"
+                                  : "text-muted-foreground",
+                            )}
+                          >
+                            {complete ? (
+                              <Check className="size-3.5 shrink-0 text-success" strokeWidth={2.5} />
+                            ) : inProgress ? (
+                              <Loader2 className="size-3.5 shrink-0 animate-spin" />
+                            ) : (
+                              <span className="size-3.5 shrink-0 rounded-full border border-border" />
+                            )}
+                            {label}
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  </div>
+                )}
+              </section>
+
+              {/* ── Action button ────────────────────────────────────────── */}
+              {phase === "success" ? (
+                <div className="mt-6 space-y-3">
                   <button
                     type="button"
-                    onClick={() =>
-                      connect({ connector: connectors.find((c) => c.id === "walletConnect")! })
-                    }
-                    className="w-full rounded-2xl border border-border bg-secondary px-4 py-3 text-sm font-medium flex items-center justify-center gap-2 hover:bg-secondary/80 transition-colors"
+                    onClick={() => navigate({ to: "/activity" })}
+                    className="w-full rounded-full bg-ink text-ink-foreground py-4 font-medium inline-flex items-center justify-center gap-2"
                   >
-                    <img src="/images/walletconnect.svg" alt="WalletConnect" className="size-4" />
-                    WalletConnect
+                    <Check className="size-4" /> View in activity
                   </button>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        <div>
-          <p className="text-sm font-medium mb-3">Source</p>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                Chain
-              </span>
-              <Select
-                disabled={!interactive}
-                value={chainId}
-                onValueChange={(v) => {
-                  const c = v as ChainId;
-                  setChainId(c);
-                  const next = TOKENS_BY_CHAIN[c][0].id;
-                  setTokenId(next);
-                  setLifiQuote(null);
-                }}
-              >
-                <SelectTrigger className={sourceSelectTriggerClass}>
-                  <div className="flex min-w-0 flex-1 items-center text-left">
-                    <SelectValue placeholder="Chain" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  {CHAINS.map(({ id, name, Icon }) => (
-                    <SelectItem key={id} value={id} className="py-2.5">
-                      <span className="flex items-center gap-2.5 min-w-0">
-                        <Icon className="size-5 shrink-0" />
-                        <span className="truncate">{name}</span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                Token
-              </span>
-              <Select
-                disabled={!interactive}
-                value={tokenId}
-                onValueChange={(v) => {
-                  setTokenId(v as TokenId);
-                  setLifiQuote(null);
-                }}
-              >
-                <SelectTrigger className={sourceSelectTriggerClass}>
-                  <div className="flex min-w-0 flex-1 items-center text-left">
-                    <SelectValue placeholder="Token" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  {tokens.map(({ id, label, Icon }) => (
-                    <SelectItem key={id} value={id} className="py-2.5">
-                      <span className="flex items-center gap-2.5 min-w-0">
-                        <Icon className="size-5 shrink-0" />
-                        <span className="truncate">{label}</span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Route visualization ────────────────────────────────── */}
-        <div>
-          <p className="text-sm font-medium mb-3">Route</p>
-          <div className="flex items-stretch justify-between gap-1 sm:gap-2">
-            <RouteLeg
-              icon={
-                <RouteTokenPair
-                  left={<ChainIcon className="size-[22px]" />}
-                  right={<TokenIcon className="size-[22px]" />}
-                />
-              }
-              label={chainMeta.name}
-              sub={tokenMeta.label}
-            />
-            <FlowArrow />
-            <RouteLeg
-              icon={<IconLifi className="size-7" />}
-              label="LI.FI"
-              sub={quoteStepText}
-              compact
-            />
-            <FlowArrow />
-            <RouteLeg
-              highlight
-              icon={
-                <RouteTokenPair
-                  variant="accent"
-                  left={<IconSolana className="size-[22px]" />}
-                  right={<IconUSDC className="size-[22px]" />}
-                />
-              }
-              label="Solana"
-              sub={receiveLabel}
-            />
-          </div>
-        </div>
-
-        {/* ── Error banner ───────────────────────────────────────── */}
-        {quoteError && phase === "idle" && (
-          <div className="flex items-start gap-3 rounded-2xl bg-destructive/10 border border-destructive/30 px-4 py-3">
-            <AlertTriangle className="size-4 shrink-0 text-destructive mt-0.5" />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-destructive">Could not load bridge quote</p>
-              <p className="text-xs text-destructive/80 mt-0.5 line-clamp-2">{quoteError}</p>
-            </div>
-            <button
-              type="button"
-              onClick={retryQuote}
-              className="shrink-0 text-destructive hover:text-destructive/80 transition-colors"
-            >
-              <RefreshCw className="size-4" />
-            </button>
-          </div>
-        )}
-
-        {/* ── Quote details ──────────────────────────────────────── */}
-        <ul className="space-y-2 text-sm pt-1">
-          <Row k="You send" v={quoteSendText} bold loading={quoteLoading} />
-          <Row k="Estimated time" v={quoteEtaText} loading={quoteLoading} />
-          <Row k="Network + bridge fee" v={quoteFeeText} loading={quoteLoading} />
-          <Row k="You receive" v={quoteReceiveText} bold loading={quoteLoading} />
-          {lifiQuote && (
-            <Row
-              k="Provider"
-              v={
-                lifiQuote.route.steps[0]?.toolDetails?.name ??
-                lifiQuote.route.steps[0]?.tool ??
-                "LI.F.I"
-              }
-            />
-          )}
-        </ul>
-
-        {/* ── Bridge progress ────────────────────────────────────── */}
-        {(phase === "bridging" || phase === "success") && (
-          <div className="pt-2 border-t border-border space-y-3" aria-live="polite">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-medium text-muted-foreground">
-                {phase === "success" ? "Bridge complete" : "Bridge in progress"}
-              </span>
-              <span className="text-xs tabular text-muted-foreground">{progress}%</span>
-            </div>
-            <Progress className="h-2 bg-secondary" value={progress} />
-            <ol className="space-y-1.5">
-              {BRIDGE_STEPS.map((label, i) => {
-                const complete = phase === "success" || i < stepIndex;
-                const inProgress = phase === "bridging" && i === stepIndex;
-                return (
-                  <li
-                    key={label}
-                    className={cn(
-                      "flex items-center gap-2 text-xs transition-colors",
-                      complete
-                        ? "text-success"
-                        : inProgress
-                          ? "text-foreground font-medium"
-                          : "text-muted-foreground",
-                    )}
+                  <button
+                    type="button"
+                    onClick={resetFlow}
+                    className="w-full rounded-full border border-border bg-background py-3.5 text-sm font-medium text-foreground"
                   >
-                    {complete ? (
-                      <Check className="size-3.5 shrink-0 text-success" strokeWidth={2.5} />
-                    ) : inProgress ? (
-                      <Loader2 className="size-3.5 shrink-0 animate-spin" />
-                    ) : (
-                      <span className="size-3.5 shrink-0 rounded-full border border-border" />
-                    )}
-                    {label}
-                  </li>
-                );
-              })}
-            </ol>
-          </div>
-        )}
-      </section>
+                    Bridge again
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  disabled={
+                    !receiveUsdc ||
+                    !agentDepositAddress ||
+                    (phase !== "idle" && phase !== "quoting") ||
+                    (!lifiQuote && !quoteLoading)
+                  }
+                  onClick={() => (phase === "idle" ? startBridge() : undefined)}
+                  className="mt-6 w-full rounded-full bg-ink text-ink-foreground py-4 font-medium inline-flex items-center justify-center gap-2 disabled:opacity-60 disabled:pointer-events-none"
+                >
+                  {phase === "quoting" ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      Locking route…
+                    </>
+                  ) : phase === "bridging" ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      Bridging…
+                    </>
+                  ) : quoteLoading ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      Loading quote…
+                    </>
+                  ) : (
+                    <>
+                      <ChevronRight className="size-4" />
+                      Review &amp; bridge
+                    </>
+                  )}
+                </button>
+              )}
 
-      {/* ── Action button ────────────────────────────────────────── */}
-      {phase === "success" ? (
-        <div className="mt-6 space-y-3">
-          <button
-            type="button"
-            onClick={() => navigate({ to: "/activity" })}
-            className="w-full rounded-full bg-ink text-ink-foreground py-4 font-medium inline-flex items-center justify-center gap-2"
-          >
-            <Check className="size-4" /> View in activity
-          </button>
-          <button
-            type="button"
-            onClick={resetFlow}
-            className="w-full rounded-full border border-border bg-background py-3.5 text-sm font-medium text-foreground"
-          >
-            Bridge again
-          </button>
-        </div>
-      ) : (
-        <button
-          type="button"
-          disabled={
-            !receiveUsdc ||
-            !agentDepositAddress ||
-            (phase !== "idle" && phase !== "quoting") ||
-            (!lifiQuote && !quoteLoading)
-          }
-          onClick={() => (phase === "idle" ? startBridge() : undefined)}
-          className="mt-6 w-full rounded-full bg-ink text-ink-foreground py-4 font-medium inline-flex items-center justify-center gap-2 disabled:opacity-60 disabled:pointer-events-none"
-        >
-          {phase === "quoting" ? (
-            <>
-              <Loader2 className="size-4 animate-spin" />
-              Locking route…
-            </>
-          ) : phase === "bridging" ? (
-            <>
-              <Loader2 className="size-4 animate-spin" />
-              Bridging…
-            </>
-          ) : quoteLoading ? (
-            <>
-              <Loader2 className="size-4 animate-spin" />
-              Loading quote…
-            </>
-          ) : (
-            <>
-              <ChevronRight className="size-4" />
-              Review &amp; bridge
-            </>
-          )}
-        </button>
-      )}
-
-      {/* ── LI.FI attribution ────────────────────────────────────── */}
+              {/* ── LI.FI attribution ────────────────────────────────────── */}
               <p className="mt-4 text-center text-[10px] text-muted-foreground px-2">
-                Routes powered by <span className="font-medium text-foreground/70">LI.FI</span> · Quotes
-                update live · Bridge execution simulated in demo
+                Routes powered by <span className="font-medium text-foreground/70">LI.FI</span> ·
+                Quotes update live · Bridge execution simulated in demo
               </p>
             </TabsContent>
           </Tabs>

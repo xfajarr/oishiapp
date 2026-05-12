@@ -90,7 +90,9 @@ export function CommonAgentRulesForm({
       <div className="flex items-center justify-between gap-4">
         <div>
           <Label className="text-sm">Quiet hours</Label>
-          <p className="text-xs text-muted-foreground mt-0.5">No autonomous trades 23:00–07:00 local.</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            No autonomous trades 23:00–07:00 local.
+          </p>
         </div>
         <Switch
           checked={value.quietHoursEnabled}
@@ -133,7 +135,9 @@ export function StrategySpecificRulesForm({
               value={[typeof value.apyLean === "number" ? value.apyLean : 45]}
               onValueChange={([v]) => set("apyLean", v)}
             />
-            <p className="text-xs text-muted-foreground">Higher = more aggressive vault mixes (simulated).</p>
+            <p className="text-xs text-muted-foreground">
+              Higher = more aggressive vault mixes (simulated).
+            </p>
           </div>
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -153,7 +157,9 @@ export function StrategySpecificRulesForm({
           <div className="space-y-3">
             <div className="flex justify-between">
               <Label className="text-sm">Max leverage</Label>
-              <span className="text-sm font-medium tabular">{typeof value.maxLev === "number" ? value.maxLev : 3}x</span>
+              <span className="text-sm font-medium tabular">
+                {typeof value.maxLev === "number" ? value.maxLev : 3}x
+              </span>
             </div>
             <Slider
               min={1}
@@ -179,7 +185,9 @@ export function StrategySpecificRulesForm({
           <div className="space-y-3">
             <div className="flex justify-between">
               <Label className="text-sm">Max position (USDC)</Label>
-              <span className="text-sm font-medium tabular">${typeof value.maxPosition === "number" ? value.maxPosition : 50}</span>
+              <span className="text-sm font-medium tabular">
+                ${typeof value.maxPosition === "number" ? value.maxPosition : 50}
+              </span>
             </div>
             <Slider
               min={10}
@@ -192,7 +200,9 @@ export function StrategySpecificRulesForm({
           <div className="flex items-center justify-between gap-4">
             <div>
               <Label className="text-sm">Liquid markets only</Label>
-              <p className="text-xs text-muted-foreground mt-0.5">&gt; $2M depth (demo heuristic).</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                &gt; $2M depth (demo heuristic).
+              </p>
             </div>
             <Switch
               checked={value.liquidOnly !== false}
@@ -219,12 +229,16 @@ export function StrategySpecificRulesForm({
               value={[typeof value.ilTolerance === "number" ? value.ilTolerance : 40]}
               onValueChange={([v]) => set("ilTolerance", v)}
             />
-            <p className="text-xs text-muted-foreground">Higher allows wider price ranges before rebalance.</p>
+            <p className="text-xs text-muted-foreground">
+              Higher allows wider price ranges before rebalance.
+            </p>
           </div>
           <div className="flex items-center justify-between gap-4">
             <div>
               <Label className="text-sm">Auto-rebalance</Label>
-              <p className="text-xs text-muted-foreground mt-0.5">When price exits the band (simulated).</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                When price exits the band (simulated).
+              </p>
             </div>
             <Switch
               checked={value.autoRebal !== false}
@@ -240,7 +254,9 @@ export function StrategySpecificRulesForm({
           <div className="space-y-3">
             <div className="flex justify-between">
               <Label className="text-sm">Max LST share of vault</Label>
-              <span className="text-xs tabular">{typeof value.maxLstPct === "number" ? value.maxLstPct : 60}%</span>
+              <span className="text-xs tabular">
+                {typeof value.maxLstPct === "number" ? value.maxLstPct : 60}%
+              </span>
             </div>
             <Slider
               min={20}
@@ -266,7 +282,9 @@ export function StrategySpecificRulesForm({
           <div className="space-y-3">
             <div className="flex justify-between">
               <Label className="text-sm">Max slippage</Label>
-              <span className="text-xs tabular">{typeof value.slippageBps === "number" ? value.slippageBps : 50} bps</span>
+              <span className="text-xs tabular">
+                {typeof value.slippageBps === "number" ? value.slippageBps : 50} bps
+              </span>
             </div>
             <Slider
               min={10}
@@ -279,7 +297,9 @@ export function StrategySpecificRulesForm({
           <div className="flex items-center justify-between gap-4">
             <div>
               <Label className="text-sm">Restrict to audited routes</Label>
-              <p className="text-xs text-muted-foreground mt-0.5">Fewer hops, fewer surface-area surprises.</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Fewer hops, fewer surface-area surprises.
+              </p>
             </div>
             <Switch
               checked={value.auditedRoutes !== false}
@@ -295,7 +315,9 @@ export function StrategySpecificRulesForm({
           <div className="space-y-3">
             <div className="flex justify-between">
               <Label className="text-sm">Max share in one pool</Label>
-              <span className="text-xs tabular">{typeof value.maxPoolPct === "number" ? value.maxPoolPct : 35}%</span>
+              <span className="text-xs tabular">
+                {typeof value.maxPoolPct === "number" ? value.maxPoolPct : 35}%
+              </span>
             </div>
             <Slider
               min={10}
@@ -321,7 +343,9 @@ export function StrategySpecificRulesForm({
           <div className="space-y-3">
             <div className="flex justify-between">
               <Label className="text-sm">Max LTV</Label>
-              <span className="text-xs tabular">{typeof value.maxLtv === "number" ? value.maxLtv : 55}%</span>
+              <span className="text-xs tabular">
+                {typeof value.maxLtv === "number" ? value.maxLtv : 55}%
+              </span>
             </div>
             <Slider
               min={30}

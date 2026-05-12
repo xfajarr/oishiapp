@@ -1,29 +1,23 @@
-import type { AgentStrategy } from "@/data/agent-strategies";
-import { cn } from "@/lib/utils";
+import type { AgentSkill } from "@/data/agent-skills";
 
 export function ProtocolTile({
-  strategy,
+  skill,
   className,
   size = "md",
 }: {
-  strategy: AgentStrategy;
+  skill: AgentSkill;
   className?: string;
   size?: "sm" | "md" | "lg";
 }) {
-  const sz = size === "lg" ? "size-14 text-lg" : size === "sm" ? "size-9 text-[10px]" : "size-11 text-sm";
+  const dims = size === "sm" ? "size-8" : size === "lg" ? "size-14" : "size-10";
+
   return (
     <div
-      className={cn(
-        "rounded-2xl flex items-center justify-center font-semibold text-white shadow-inner ring-1 ring-white/15 shrink-0",
-        sz,
-        className,
-      )}
-      style={{
-        background: `linear-gradient(135deg, ${strategy.brandFrom}, ${strategy.brandTo})`,
-      }}
-      aria-hidden
+      className={`shrink-0 rounded-xl flex items-center justify-center overflow-hidden bg-white ${dims} ${className ?? ""}`}
     >
-      {strategy.abbrev}
+      {skill.icon && (
+        <img src={skill.icon} alt={skill.protocol} className="size-full object-contain p-1.5" />
+      )}
     </div>
   );
 }
