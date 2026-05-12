@@ -8,6 +8,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   setOishiSigner,
+  setOishiSiwsSigner,
   login,
   clearStoredToken,
   getSessionToken,
@@ -31,7 +32,7 @@ import {
 import type { CreateAgentPayload, BackendAgent } from "@/lib/oishi-api";
 
 export function useOishiBackend() {
-  const { publicKey, signMessage, connected } = useWallet();
+  const { publicKey, signMessage, signIn, connected } = useWallet();
   const wallet = publicKey?.toBase58() ?? null;
   const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(getSessionToken()));
   const [authError, setAuthError] = useState<string | null>(null);
@@ -46,6 +47,26 @@ export function useOishiBackend() {
       setOishiSigner((msg) => signMessageRef.current!(msg));
     }
   }, [signMessage]);
+
+  const signInRef = useRef(signIn);
+  useEffect(() => {
+    signInRef.current = signIn;
+  }, [signIn]);
+
+  useEffect(() => {
+    if (signIn) {
+      setOishiSiwsSigner(async (input) => {
+        const out = await signInRef.current!(input);
+        return {
+          account: { publicKey: out.account.publicKey },
+          signedMessage: out.signedMessage,
+          signature: out.signature,
+        };
+      });
+    } else {
+      setOishiSiwsSigner(null);
+    }
+  }, [signIn]);
 
   const prevWallet = useRef<string | null>(null);
   useEffect(() => {

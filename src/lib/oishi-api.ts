@@ -116,8 +116,73 @@ export function setOishiSigner(fn: (msg: Uint8Array) => Promise<Uint8Array>) {
   signMessageFn = fn;
 }
 
+/**
+ * SIWS signer — wraps the wallet-standard `signIn` feature.
+ * Returns the raw output from the wallet adapter; conversion to the
+ * backend's base64 wire format happens inside `loginWithSiws`.
+ */
+export interface SiwsAdapterOutput {
+  account: { publicKey: Uint8Array };
+  signedMessage: Uint8Array;
+  signature: Uint8Array;
+}
+export type SiwsSigner = (input: Record<string, unknown>) => Promise<SiwsAdapterOutput>;
+
+let siwsSignerFn: SiwsSigner | null = null;
+export function setOishiSiwsSigner(fn: SiwsSigner | null) {
+  siwsSignerFn = fn;
+}
+
+function bytesToBase64(b: Uint8Array): string {
+  let s = "";
+  for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+  return btoa(s);
+}
+
 // ── Login (sign once → get JWT) ─────────────────────────────────────────
+// Prefers SIWS (wallet-standard) when the connected wallet supports it.
+// Falls back to the legacy custom-message flow otherwise.
 export async function login(wallet: string): Promise<{ token: string; wallet: string }> {
+  if (siwsSignerFn) {
+    return loginWithSiws(wallet);
+  }
+  return loginLegacy(wallet);
+}
+
+async function loginWithSiws(wallet: string): Promise<{ token: string; wallet: string }> {
+  // 1. Challenge from server.
+  const challengeRes = await fetch(`${API}/auth/siws/challenge`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ address: wallet }),
+  });
+  const challengeData = await challengeRes.json();
+  if (!challengeRes.ok) throw new Error(challengeData.error ?? "SIWS challenge failed");
+  const signInInput = challengeData.signInInput as Record<string, unknown>;
+
+  // 2. Wallet signs it (Phantom popup, single click).
+  const out = await siwsSignerFn!(signInInput);
+
+  const signInOutput = {
+    account: { publicKey: bs58.encode(out.account.publicKey) },
+    signedMessage: bytesToBase64(out.signedMessage),
+    signature: bytesToBase64(out.signature),
+  };
+
+  // 3. Server verifies, returns JWT.
+  const verifyRes = await fetch(`${API}/auth/siws/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ signInInput, signInOutput }),
+  });
+  const data = await verifyRes.json();
+  if (!verifyRes.ok) throw new Error(data.error ?? "SIWS verification failed");
+
+  setStoredToken(data.token);
+  return data;
+}
+
+async function loginLegacy(wallet: string): Promise<{ token: string; wallet: string }> {
   if (!signMessageFn) throw new Error("Wallet not connected. Cannot sign.");
 
   const message = JSON.stringify({
